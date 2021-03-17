@@ -80,7 +80,7 @@ class ChannelModel(MetaChannel):
         return z
 
     def rician_multipath_fading_channel(self):
-        # For k_rice
+        # For self.k_rice=0 this model is theoretically equivalent to Rayleigh fading model
 
         def calculate_means(r_hat, k_rice):
             # calculate_means calculates the means of the complex Gaussians representing the
