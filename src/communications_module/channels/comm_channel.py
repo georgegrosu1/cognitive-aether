@@ -5,7 +5,7 @@ from .MetaChannel import MetaChannel
 class ChannelModel(MetaChannel):
 
     def __init__(self, total_carriers_over_ch, channel_type='slow_fading', scaled_ch=True, velocity=None, fc=None,
-                 sim_sample_rante=None, number_paths=None, k_rice=None, r_hat_rice=None):
+                 number_paths=None, k_rice=None, r_hat_rice=None):
         super().__init__(channel_type)
         self.total_carriers_ch = total_carriers_over_ch
         self.channel_type = channel_type

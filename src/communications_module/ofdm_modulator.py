@@ -101,7 +101,7 @@ class OFDMModulator:
             n = (np.random.standard_normal(convolved.shape))
         else:
             n = (np.random.standard_normal(convolved.shape) + 1j * np.random.standard_normal(convolved.shape))
-        print("RX Signal power: %.4f. Noise power: %.4f" % (signal_power, sigma2))
+        print("RX Signal power: %.4f. Noise power: %.4f" % (signal_power, np.mean(abs(n))))
         return convolved + n, n
 
     def remove_cyclic_prefix(self, rx_ofdm_signal):
