@@ -5,7 +5,7 @@ from .MetaChannel import MetaChannel
 class ChannelModel(MetaChannel):
 
     def __init__(self, total_carriers_over_ch, channel_type='slow_fading', scaled_ch=True, velocity=None, fc=None,
-                 sim_sample_rante=None, number_paths=None, k_rician=None, r_hat_rician=None):
+                 sim_sample_rante=None, number_paths=None, k_rice=None, r_hat_rice=None):
         super().__init__(channel_type)
         self.total_carriers_ch = total_carriers_over_ch
         self.channel_type = channel_type
@@ -14,8 +14,8 @@ class ChannelModel(MetaChannel):
         self.fc = fc
         self.sim_sample_rate = sim_sample_rante
         self.number_paths = number_paths
-        self.k_rician = k_rician
-        self.r_hat_rician = r_hat_rician
+        self.k_rice = k_rice
+        self.r_hat_rice = r_hat_rice
         self.ch_response = self._init_channel()
 
     def _init_channel(self):
@@ -80,17 +80,18 @@ class ChannelModel(MetaChannel):
         return z
 
     def rician_multipath_fading_channel(self):
+        # For k_rice
 
-        def calculate_means(r_hat, k_rician):
+        def calculate_means(r_hat, k_rice):
             # calculate_means calculates the means of the complex Gaussians representing the
             # in-phase and quadrature components
             phi = (np.random.rand() - 0.5) * 2 * np.pi
-            p = np.sqrt(k_rician * r_hat / (1 + r_hat)) * np.cos(phi)
-            q = np.sqrt(k_rician * r_hat / (1 + r_hat)) * np.sin(phi)
+            p = np.sqrt(k_rice * r_hat / (1 + r_hat)) * np.cos(phi)
+            q = np.sqrt(k_rice * r_hat / (1 + r_hat)) * np.sin(phi)
             return p, q
 
-        def scattered_component(r_hat, k_rician):
-            sigma = np.sqrt(r_hat / (2 * (1 + k_rician)))
+        def scattered_component(r_hat, k_rice):
+            sigma = np.sqrt(r_hat / (2 * (1 + k_rice)))
             return sigma
 
         def generate_gaussian_noise(mean, sigma, fs):
@@ -98,14 +99,14 @@ class ChannelModel(MetaChannel):
             gaussians = np.random.default_rng().normal(mean, sigma, fs)
             return gaussians
 
-        def complex_multipath_fading(r_hat, k_rician, fs):
+        def complex_multipath_fading(r_hat, k_rice, fs):
             # complex_Multipath_Fading generates the complex fading random variables
-            p, q = calculate_means(r_hat, k_rician)
-            sigma = scattered_component(r_hat, k_rician)
+            p, q = calculate_means(r_hat, k_rice)
+            sigma = scattered_component(r_hat, k_rice)
             multipath_fading = generate_gaussian_noise(p, sigma, fs) + (1j * generate_gaussian_noise(q, sigma, fs))
             return multipath_fading
 
-        return complex_multipath_fading(self.r_hat_rician, self.k_rician, self.sim_sample_rate)
+        return complex_multipath_fading(self.r_hat_rice, self.k_rice, self.sim_sample_rate)
 
     @staticmethod
     def get_linear_ch_magnitude(ch_resp):
