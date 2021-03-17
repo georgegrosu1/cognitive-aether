@@ -96,7 +96,7 @@ class ChannelModel(MetaChannel):
 
         def generate_gaussian_noise(mean, sigma, fs):
             # generate_Gaussians generates the Gaussian random variables
-            gaussians = np.random.default_rng().normal(mean, sigma, fs)
+            gaussians = np.random.default_rng().normal(mean, sigma, int(fs))
             return gaussians
 
         def complex_multipath_fading(r_hat, k_rice, fs):
