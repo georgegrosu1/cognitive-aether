@@ -1,11 +1,13 @@
 import numpy as np
-import pandas as pd
 from sympy.combinatorics.graycode import GrayCode
+
+from .channels.comm_channel import ChannelModel
 
 
 class OFDMModulator:
 
-    def __init__(self, bits_per_sym: int(), subcarriers: int(), cp_ratio_numitor, num_pilots: int(), rx_snr: float):
+    def __init__(self, bits_per_sym: int(), subcarriers: int(), cp_ratio_numitor, num_pilots: int(), rx_snr: float,
+                 fading_channel: ChannelModel):
         self.subcarriers = subcarriers
         self.cp_ratio_numitor = cp_ratio_numitor
         self.num_pilots = num_pilots
@@ -16,9 +18,10 @@ class OFDMModulator:
         self.subcarriers_idxs = self.get_subcarriers_idxs()
         self.pilots_idxs = self.get_pilots_idxs()
         self.data_carriers_idxs = np.delete(self.subcarriers_idxs, self.pilots_idxs)
-        self.payload_per_ofdm = len(self.data_carriers_idxs) * self.bits_per_sym  # number of payload bits per OFDM symbol
+        self.payload_per_ofdm = len(self.data_carriers_idxs) * self.bits_per_sym
+        # number of payload bits per OFDM symbol
         self.mapping_table = self.init_mapping_table()
-        self.channel_response = self.init_channel_response()
+        self.channel_response = fading_channel.ch_response
 
     def get_subcarriers_idxs(self):
         return np.arange(self.subcarriers)
@@ -56,7 +59,8 @@ class OFDMModulator:
         return payload_words, ignore_flag
 
     def map_words_2_qam(self, payload):
-        return np.array([self.mapping_table[str(b).replace(' ', '').replace('[', '').replace(']', '')] for b in payload])
+        return np.array([self.mapping_table[str(b).replace(' ', '').replace('[', '').replace(']', '')]
+                         for b in payload])
 
     def init_mapping_table(self):
         assert self.check_perfect_square(), 'Num of bits must be a square of 2'
@@ -80,7 +84,8 @@ class OFDMModulator:
             symbol[self.data_carriers_idxs] = qam_payload  # allocate the data subcarriers
         return symbol
 
-    def ofdm_idft(self, ofdm_symbol_data):
+    @staticmethod
+    def ofdm_idft(ofdm_symbol_data):
         return np.fft.ifft(ofdm_symbol_data)
 
     def add_cyclic_prefix(self, ofdm_symbol_time_domain):

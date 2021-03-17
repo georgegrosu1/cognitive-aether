@@ -35,7 +35,7 @@ class ChannelModel(MetaChannel):
                 return scale(ch_fading_dict[self.channel_type])
             return ch_fading_dict[self.channel_type]
 
-        return scale(get_channel_by_type())
+        return get_channel_by_type()
 
     def slow_fading_channel(self):
         arr = []
