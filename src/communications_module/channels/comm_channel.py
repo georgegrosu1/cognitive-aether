@@ -1,11 +1,21 @@
 import numpy as np
+from .MetaChannel import MetaChannel
 
 
-class ChannelModel:
+class ChannelModel(MetaChannel):
 
-    def __init__(self, total_carriers_over_ch, channel_type='slow_fading'):
+    def __init__(self, total_carriers_over_ch, channel_type='slow_fading', scaled_ch=True, velocity=None, fc=None,
+                 sim_sample_rante=None, number_paths=None, k_rician=None, r_hat_rician=None):
+        super().__init__(channel_type)
         self.total_carriers_ch = total_carriers_over_ch
         self.channel_type = channel_type
+        self.scaled_ch = scaled_ch
+        self.velocity = velocity
+        self.fc = fc
+        self.sim_sample_rate = sim_sample_rante
+        self.number_paths = number_paths
+        self.k_rician = k_rician
+        self.r_hat_rician = r_hat_rician
         self.ch_response = self._init_channel()
 
     def _init_channel(self):
@@ -17,13 +27,17 @@ class ChannelModel:
 
         def get_channel_by_type():
             ch_fading_dict = {
-                'slow_fading': self.slow_fading_ch_response()
+                'slow_fading': self.slow_fading_channel(),
+                'rayleigh_fading': self.rayleigh_multipath_fading_channel(),
+                'rician_fading': self.rician_multipath_fading_channel()
             }
+            if self.scaled_ch:
+                return scale(ch_fading_dict[self.channel_type])
             return ch_fading_dict[self.channel_type]
 
         return scale(get_channel_by_type())
 
-    def slow_fading_ch_response(self):
+    def slow_fading_channel(self):
         arr = []
         arr_len = int(np.random.uniform(3, 10))
         for coef in range(arr_len + 1):
@@ -34,6 +48,70 @@ class ChannelModel:
                 arr.append(re)
             else:
                 arr.append(w)
-        print(arr)
         channel_response = np.array(arr)  # the impulse response of the wireless channel
         return np.fft.fft(channel_response, self.total_carriers_ch)
+
+    def rayleigh_multipath_fading_channel(self):
+        """
+        # :param velocity: Velocity of RX or TX in Km/h
+        # :param central_freq: Central frequency
+        # :param sim_sample_rate: Sample rate of simulation
+        # :param number_paths: Number of paths to sum
+        """
+        assert (self.velocity is not None) & (self.fc is not None) & (self.sim_sample_rate is not None) \
+               & (self.number_paths is not None), 'Make sure class attributes are not None'
+        fc = self.fc  # RF carrier frequency in Hz
+        fs = self.sim_sample_rate  # sample rate of simulation
+        num_paths = self.number_paths  # number of sinusoids to sum
+        v_ms = self.velocity * 1000 / 3600  # convert to m/s
+        fd = v_ms * fc / 3e8  # max Doppler shift
+        t = np.arange(0, 1, 1 / fs)  # time vector. (start, stop, step)
+        x = np.zeros(len(t))
+        y = np.zeros(len(t))
+        for i in range(num_paths):
+            alpha = (np.random.rand() - 0.5) * 2 * np.pi
+            phi = (np.random.rand() - 0.5) * 2 * np.pi
+            x += np.random.randn() * np.cos(2 * np.pi * fd * t * np.cos(alpha) + phi)
+            y += np.random.randn() * np.sin(2 * np.pi * fd * t * np.cos(alpha) + phi)
+
+        # z is the complex coefficient representing channel, you can think of this as a phase shift and magnitude scale
+        z = (1 / np.sqrt(num_paths)) * (x + 1j * y)  # this is what you would actually use when simulating the channel
+
+        return z
+
+    def rician_multipath_fading_channel(self):
+
+        def calculate_means(r_hat, k_rician):
+            # calculate_means calculates the means of the complex Gaussians representing the
+            # in-phase and quadrature components
+            phi = (np.random.rand() - 0.5) * 2 * np.pi
+            p = np.sqrt(k_rician * r_hat / (1 + r_hat)) * np.cos(phi)
+            q = np.sqrt(k_rician * r_hat / (1 + r_hat)) * np.sin(phi)
+            return p, q
+
+        def scattered_component(r_hat, k_rician):
+            sigma = np.sqrt(r_hat / (2 * (1 + k_rician)))
+            return sigma
+
+        def generate_gaussian_noise(mean, sigma, fs):
+            # generate_Gaussians generates the Gaussian random variables
+            gaussians = np.random.default_rng().normal(mean, sigma, fs)
+            return gaussians
+
+        def complex_multipath_fading(r_hat, k_rician, fs):
+            # complex_Multipath_Fading generates the complex fading random variables
+            p, q = calculate_means(r_hat, k_rician)
+            sigma = scattered_component(r_hat, k_rician)
+            multipath_fading = generate_gaussian_noise(p, sigma, fs) + (1j * generate_gaussian_noise(q, sigma, fs))
+            return multipath_fading
+
+        return complex_multipath_fading(self.r_hat_rician, self.k_rician, self.sim_sample_rate)
+
+    @staticmethod
+    def get_linear_ch_magnitude(ch_resp):
+        return np.abs(ch_resp)
+
+    @staticmethod
+    def get_db_ch_magnitude(ch_resp):
+        z_mag = np.abs(ch_resp)
+        return 10 * np.log10(z_mag)
