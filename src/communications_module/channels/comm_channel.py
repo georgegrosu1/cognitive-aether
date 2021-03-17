@@ -12,7 +12,7 @@ class ChannelModel(MetaChannel):
         self.scaled_ch = scaled_ch
         self.velocity = velocity
         self.fc = fc
-        self.sim_sample_rate = sim_sample_rante
+        self.sim_sample_rate = total_carriers_over_ch
         self.number_paths = number_paths
         self.k_rice = k_rice
         self.r_hat_rice = r_hat_rice
