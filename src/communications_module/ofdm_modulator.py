@@ -92,16 +92,30 @@ class OFDMModulator:
         cp = ofdm_symbol_time_domain[-self.cyclic_prefix:]  # take the last CP samples ...
         return np.hstack([cp, ofdm_symbol_time_domain])  # ... and add them to the beginning
 
+    @staticmethod
+    def get_snr_context_rescale_factor(rx_snr, noise, convolved_sgn):
+        sigma = 10 ** (rx_snr / 10)
+        noise_power = np.mean(abs(noise ** 2))
+        req_sgn_power = sigma * noise_power
+        initial_sgn_power = np.mean(abs(convolved_sgn ** 2))
+        factor = np.sqrt(req_sgn_power) / np.sqrt(initial_sgn_power)
+        print(f'Required signal power: {req_sgn_power} [W]=[V^2]'
+              f'\nInitial signal power: {initial_sgn_power} [W]=[V^2]'
+              f'\nSignal amplitude rescale factor: {factor} [Volts]')
+        return factor, noise_power, req_sgn_power
+
     def ofdm_over_channel(self, ofdm_signal):
+
         convolved = np.convolve(ofdm_signal, self.channel_response, mode='same')
-        signal_power = np.mean(abs(convolved ** 2))
-        sigma2 = 10 ** (self.rx_snr / 10)
-        convolved = np.sqrt(sigma2/2) * convolved
         if np.isrealobj(ofdm_signal):
             n = (np.random.standard_normal(convolved.shape))
         else:
             n = (np.random.standard_normal(convolved.shape) + 1j * np.random.standard_normal(convolved.shape))
-        print("RX Signal power: %.4f. Noise power: %.4f" % (signal_power, np.mean(abs(n))))
+        factor, noise_power, _ = self.get_snr_context_rescale_factor(self.rx_snr, n, convolved)
+        convolved = factor * convolved
+        signal_power = np.mean(abs(convolved ** 2))
+        snr_db = 10 * np.log10(signal_power / noise_power)
+        print("RX Signal power: %.4f. Noise power: %.4f, SNR [dB]: %.4f" % (signal_power, noise_power, snr_db))
         return convolved + n, n
 
     def remove_cyclic_prefix(self, rx_ofdm_signal):
