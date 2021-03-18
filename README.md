@@ -5,7 +5,7 @@
 This framework offers an environment to generate OFDM data, transmit it over different channels (AWGN slow fading, Rayleigh, Rice) and receive it with channel distortions.
 All processed signals (Gray code, OFDM TX, OFDM RX, noise, convolved) can be saved in pandas DataFrames and CSV files. Furthermore, this framework aims to support development of Machine Learning / Deep Learning solutions through the posibility of synthesizing datasets with a wide spectrum of channel variations and signal distortions.
 
-NOTE: The development of this framework is in progress and more futures are about to come.
+NOTE: The development of this framework is in progress and more features are about to come.
 
 
 ![graymaptable](https://user-images.githubusercontent.com/53537308/111678680-3b02ad80-8829-11eb-9a2a-a2567d6fae51.png)
