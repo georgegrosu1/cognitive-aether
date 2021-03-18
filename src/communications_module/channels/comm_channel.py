@@ -81,6 +81,7 @@ class ChannelModel(MetaChannel):
 
     def rician_multipath_fading_channel(self):
         # For self.k_rice=0 this model is theoretically equivalent to Rayleigh fading model
+        assert (self.k_rice is not None) & (self.r_hat_rice is not None), 'Make sure class attributes are not None'
 
         def calculate_means(r_hat, k_rice):
             # calculate_means calculates the means of the complex Gaussians representing the
