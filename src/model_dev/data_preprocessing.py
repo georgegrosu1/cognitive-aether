@@ -5,20 +5,23 @@ from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
 
 class TimeSeriesFeeder:
-    def __init__(self, data_path: Path, target_features: list, window_dim: int, feed_batch: int, stride: int = 1):
+    def __init__(self, data_path: Path, x_features: list, y_features: list,
+                 window_dim: int, feed_batch: int, stride: int = 1):
         self.data_path = data_path
-        self.target_features = target_features
+        self.exogenous_features = x_features
+        self.endogenous_features = y_features
         self.window_dim = window_dim
-        self.generator = self._init_generator()
         self.feed_batch = feed_batch
         self.stride = stride
+        self.generator = self._init_generator()
 
     def _init_generator(self):
         main_dataframe = self.get_data_from_path()
-        data = main_dataframe.to_numpy()
-        targets = main_dataframe.index.tolist()
-        generator = TimeseriesGenerator(data, targets, length=self.window_dim,
-                                        batch_size=self.feed_batch, stride=self.stride)
+        x_data = main_dataframe.loc[:, self.exogenous_features].to_numpy()
+        y_data = main_dataframe.loc[:, self.endogenous_features].to_numpy()
+        generator = TimeseriesGenerator(x_data, y_data, length=self.window_dim,
+                                        batch_size=self.feed_batch,
+                                        stride=self.stride)
 
         return generator
 
@@ -27,8 +30,13 @@ class TimeSeriesFeeder:
             return pd.read_csv(str(self.data_path))
         dfs = []
         all_csv_files = self.data_path.glob('*.csv')
+        take_features = self.endogenous_features + self.exogenous_features
         for file_p in all_csv_files:
             df = pd.read_csv(str(file_p))
+            ones = df['-5_TX_OFDM'] > 0
+            df.loc[ones, 'USER'] = 1
+            df.loc[~ones, 'USER'] = 0
+            df = df.loc[:, take_features]
             dfs.append(df)
         return pd.concat(dfs, axis=0)
 

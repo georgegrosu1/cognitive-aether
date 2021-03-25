@@ -1,0 +1,17 @@
+{
+  "dataset": {
+    "path": "/datasets/v1"
+  },
+  "train_cfg": {
+    "epochs": 10,
+    "batch_size": 32
+  },
+  "model_cfg": {
+    "window_size": 20,
+    "input_features": ["RX_OFDM", "BayesShrink", "VisuShrink", "sigma"],
+    "output_features": ["USER"],
+    "num_outputs": 1,
+    "positive_threshold": 0.65
+  },
+  "save_path": "/models_weights"
+}
