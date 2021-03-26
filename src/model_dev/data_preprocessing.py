@@ -33,9 +33,6 @@ class TimeSeriesFeeder:
         take_features = self.endogenous_features + self.exogenous_features
         for file_p in all_csv_files:
             df = pd.read_csv(str(file_p))
-            ones = df['-5_TX_OFDM'] > 0
-            df.loc[ones, 'USER'] = 1
-            df.loc[~ones, 'USER'] = 0
             df = df.loc[:, take_features]
             dfs.append(df)
         return pd.concat(dfs, axis=0)

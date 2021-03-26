@@ -8,6 +8,7 @@
   },
   "model_cfg": {
     "window_size": 20,
+    "input_features": ["RX_OFDM", "noise"],
     "input_features": ["RX_OFDM", "BayesShrink", "VisuShrink", "sigma"],
     "output_features": ["USER"],
     "num_outputs": 1,
