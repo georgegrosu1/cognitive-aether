@@ -7,7 +7,7 @@ import numpy as np
 
 from pathlib import Path
 from tensorflow_addons.metrics import F1Score
-from tensorflow.keras.metrics import KLDivergence, Precision, Recall
+from tensorflow.keras.metrics import KLDivergence, PrecisionAtRecall, RecallAtPrecision
 from tensorflow.keras.callbacks import ModelCheckpoint
 from src.models.deep_energy_detector import build_model
 from src.model_dev.data_preprocessing import TimeSeriesFeeder
@@ -57,13 +57,6 @@ def train_energy_detector(config_path, model_name, model=None):
     epochs = configs['train_cfg']['epochs']
     pos_thresh = configs['model_cfg']['positive_threshold']
 
-    checkpoint_filepath = get_saving_model_path(configs, model_name)
-    model_checkpoint_callback = ModelCheckpoint(
-        filepath=checkpoint_filepath,
-        save_weights_only=False,
-        monitor=Recall,
-        mode='max',
-        save_best_only=False)
 
     train_feeder = TimeSeriesFeeder(data_path=training_path,
                                     x_features=input_features,
@@ -76,18 +69,27 @@ def train_energy_detector(config_path, model_name, model=None):
                                    window_dim=window_dim,
                                    feed_batch=batch_size)
 
+    f1_score = F1Score(num_classes=2 ** num_outputs,
+                       average="micro", threshold=pos_thresh)
+    m_metrics = ['accuracy', f1_score]
+
     if model is None:
-        f1_score = F1Score(num_classes=2**num_outputs,
-                           average="micro", threshold=pos_thresh)
-        m_metrics = ['recall', 'accuracy', f1_score]
         num_inputs = len(input_features)
 
         model = build_model(input_dim=num_inputs, output_dim=num_outputs,
                             window_dim=window_dim, custom_metrics=m_metrics)
 
-    model.fit_generator(generator=train_feeder.feed_generator(), epochs=epochs,
-                        validation_data=eval_feeder.feed_generator(),
-                        callbacks=model_checkpoint_callback)
+    checkpoint_filepath = get_saving_model_path(configs, model_name)
+    model_checkpoint_callback = ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        save_weights_only=False,
+        monitor=f1_score,
+        mode='max',
+        save_best_only=False)
+
+    model.fit(train_feeder.feed_generator(), epochs=epochs,
+              validation_data=eval_feeder.feed_generator(),
+              callbacks=model_checkpoint_callback)
 
 
 def main():

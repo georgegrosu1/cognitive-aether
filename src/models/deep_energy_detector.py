@@ -32,8 +32,8 @@ def build_model(input_dim, output_dim, window_dim, custom_metrics: [],
     # model.add(Conv1D(32, (50,)))
     # model.add(MaxPooling1D())
     model.add(LSTM(units=64, return_sequences=True, unit_forget_bias=True))
-    model.add(LSTM(units=64, return_sequences=False, unit_forget_bias=True))
-    model.add(Dense(32, activation='relu'))
+    model.add(LSTM(units=32, return_sequences=False, unit_forget_bias=False))
+    model.add(Dense(16, activation='swish'))
     model.add(Dense(output_dim, activation='sigmoid'))
     model.compile(loss=loss, metrics=custom_metrics, optimizer=optimizer)
 
