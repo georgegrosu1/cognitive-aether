@@ -7,7 +7,7 @@
     "batch_size": 32
   },
   "model_cfg": {
-    "window_size": 20,
+    "window_size": 100,
     "input_features": ["RX_OFDM", "sigma"],
     "output_features": ["USER"],
     "num_outputs": 1,

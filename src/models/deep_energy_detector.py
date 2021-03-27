@@ -18,7 +18,7 @@ def build_model(input_dim, output_dim, window_dim, custom_metrics: [],
     """
     lr_schedule = ExponentialDecay(initial_learning_rate=1e-5,
                                    decay_steps=10000,
-                                   decay_rate=0.7)
+                                   decay_rate=0.3)
     if optimizer is not None:
         optimizer = optimizer
     else:
@@ -27,13 +27,15 @@ def build_model(input_dim, output_dim, window_dim, custom_metrics: [],
     model = Sequential()
     model.add(Input(shape=(window_dim, input_dim)))
     model.add(BatchNormalization())
-    model.add(Conv1D(16, (window_dim, ), padding='same', activation='relu'))
-    model.add(MaxPooling1D(padding='same'))
-    model.add(LSTM(units=64, return_sequences=True, unit_forget_bias=True))
-    model.add(Conv1D(32, (window_dim,), padding='same', activation='relu'))
-    model.add(MaxPooling1D())
-    model.add(LSTM(units=32, return_sequences=False, unit_forget_bias=True))
-    model.add(Dense(16, activation='swish'))
+    # model.add(Conv1D(16, (window_dim, ), padding='same', activation='relu'))
+    # model.add(MaxPooling1D(padding='same'))
+    model.add(LSTM(units=16, return_sequences=True, unit_forget_bias=True))
+    # model.add(Conv1D(32, (window_dim,), padding='same', activation='relu'))
+    # model.add(MaxPooling1D())
+    model.add(BatchNormalization())
+    model.add(Dropout(0.3))
+    model.add(LSTM(units=32, return_sequences=False, unit_forget_bias=False))
+    model.add(Dropout(0.5))
     model.add(Dense(output_dim, activation='sigmoid'))
     model.compile(loss=loss, metrics=custom_metrics, optimizer=optimizer)
 
