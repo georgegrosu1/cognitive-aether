@@ -47,7 +47,7 @@ class TimeSeriesFeeder:
 
         for file_p in all_csv_files:
             df = pd.read_csv(str(file_p))
-            df = df.loc[:len(df)/3, take_features]
+            df = df.loc[:, take_features]
             if self.min_max_scale:
                 df = df.apply(scale, axis=0)
             if self.pow_transform:
