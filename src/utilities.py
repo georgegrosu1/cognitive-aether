@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import special as sp
-from skimage.restoration import estimate_sigma
+from skimage.restoration import estimate_sigma, denoise_wavelet
 
 
 def invqfunc(x):
@@ -17,10 +17,31 @@ def window_pow_db(x):
     return np.log10(np.mean(x**2))
 
 
+def shannon_entropy(x):
+    p = np.histogram(x, density=True, bins='fd')[0]
+    return -np.sum(p*np.log2(p))
+
+
 def scale(x, out_range=(0, 1), axis=None):
     domain = np.min(x, axis), np.max(x, axis)
     y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
     return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
+
+
+def get_bayes_denoised(x):
+    sigma_est = estimate_sigma(x, average_sigmas=True)
+    rx_bayes = denoise_wavelet(x, method='BayesShrink', mode='soft',
+                               sigma=sigma_est / (1 + sigma_est), rescale_sigma=True)
+
+    return rx_bayes
+
+
+def get_visu_denoised(x):
+    sigma_est = estimate_sigma(x, average_sigmas=True)
+    rx_visu = denoise_wavelet(x, method='VisuShrink', mode='soft',
+                              sigma=sigma_est / (1 + sigma_est * 20), rescale_sigma=True)
+
+    return rx_visu
 
 
 def plot_roc(roc_df: pd.DataFrame, compare_signals, sensing_window=2):
