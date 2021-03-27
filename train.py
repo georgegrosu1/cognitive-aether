@@ -54,6 +54,7 @@ def train_energy_detector(config_path, model_name, model=None):
     input_features = configs['model_cfg']['input_features']
     output_features = configs['model_cfg']['output_features']
     num_outputs = configs['model_cfg']['num_outputs']
+    lr_rate = configs['model_cfg']['lr_rate']
     window_dim = configs['model_cfg']['window_size']
     epochs = configs['train_cfg']['epochs']
     pos_thresh = configs['model_cfg']['positive_threshold']
@@ -79,7 +80,8 @@ def train_energy_detector(config_path, model_name, model=None):
         num_inputs = len(input_features)
 
         model = build_model(input_dim=num_inputs, output_dim=num_outputs,
-                            window_dim=window_dim, custom_metrics=m_metrics)
+                            window_dim=window_dim, custom_metrics=m_metrics,
+                            learn_rate=lr_rate)
 
     checkpoint_filepath = get_saving_model_path(configs, model_name)
     model_checkpoint_callback = ModelCheckpoint(

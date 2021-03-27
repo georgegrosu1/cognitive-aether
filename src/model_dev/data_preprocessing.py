@@ -26,7 +26,7 @@ class TimeSeriesFeeder:
         y_data = main_dataframe.loc[:, self.endogenous_features].to_numpy()
         generator = TimeseriesGenerator(x_data, y_data, length=self.window_dim,
                                         batch_size=self.feed_batch,
-                                        stride=self.stride)
+                                        stride=self.stride, shuffle=True)
 
         return generator
 
@@ -48,10 +48,10 @@ class TimeSeriesFeeder:
         for file_p in all_csv_files:
             df = pd.read_csv(str(file_p))
             df = df.loc[:len(df)/3, take_features]
-            if self.pow_transform:
-                df = self.apply_powtransform(df)
             if self.min_max_scale:
                 df = df.apply(scale, axis=0)
+            if self.pow_transform:
+                df = self.apply_powtransform(df)
             dfs.append(df)
         return pd.concat(dfs, axis=0)
 

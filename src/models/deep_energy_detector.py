@@ -6,17 +6,18 @@ from tensorflow.keras.layers import Input, Conv1D, LSTM, Dense, Dropout, MaxPool
 
 
 def build_model(input_dim, output_dim, window_dim, custom_metrics: [],
-                loss=binary_crossentropy, optimizer=None):
+                loss=binary_crossentropy, learn_rate=1e-5, optimizer=None):
     """
     :param input_dim: Tensor; Dimension of input to model
     :param output_dim: Tensor; Dimension of model output
     :param window_dim: int; length of window
+    :param learn_rate: float; Model learning rate
     :param custom_metrics: list; List of metrics
     :param loss: loss function; List of cost funcs
     :param optimizer: Optimizing function
     :return: tf.keras.models.Sequential; Compiled model
     """
-    lr_schedule = ExponentialDecay(initial_learning_rate=1e-5,
+    lr_schedule = ExponentialDecay(initial_learning_rate=learn_rate,
                                    decay_steps=10000,
                                    decay_rate=0.3)
     if optimizer is not None:
