@@ -24,7 +24,7 @@ def get_project_root() -> Path:
     return Path(__file__).absolute()
 
 
-def get_abs_path(relative_path):
+def get_abs_path(relative_path) -> Path:
     root_path = get_project_root().parent
     final_path = Path(str(root_path) + f'/{relative_path}')
     return final_path
