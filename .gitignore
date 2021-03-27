@@ -8,6 +8,10 @@ bin-release/
 # Other files and folders
 .settings/
 .idea/
+.ipynb_checkpoints
+datasets
+models_weights
+__pycache__
 
 # Executables
 *.swf
