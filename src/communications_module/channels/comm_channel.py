@@ -1,6 +1,8 @@
 import numpy as np
 from .MetaChannel import MetaChannel
 
+from src.utilities import scale
+
 
 class ChannelModel(MetaChannel):
 
@@ -19,11 +21,6 @@ class ChannelModel(MetaChannel):
         self.ch_response = self._init_channel()
 
     def _init_channel(self):
-
-        def scale(x, out_range=(0, 1), axis=None):
-            domain = np.min(x, axis), np.max(x, axis)
-            y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
-            return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
 
         def get_channel_by_type():
             ch_fading_dict = {
