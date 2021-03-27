@@ -1,6 +1,6 @@
 {
   "dataset": {
-    "path": "/datasets/v1"
+    "path": "/datasets/v2"
   },
   "train_cfg": {
     "epochs": 10,
@@ -8,8 +8,7 @@
   },
   "model_cfg": {
     "window_size": 20,
-    "input_features": ["RX_OFDM", "noise"],
-    "input_features": ["RX_OFDM", "BayesShrink", "VisuShrink", "sigma"],
+    "input_features": ["RX_OFDM", "sigma"],
     "output_features": ["USER"],
     "num_outputs": 1,
     "positive_threshold": 0.65
