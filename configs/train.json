@@ -10,7 +10,7 @@
     "window_size": 100,
     "input_features": ["RX_OFDM", "sigma"],
     "output_features": ["USER"],
-    "lr_rate": 1e-5,
+    "lr_rate": 5e-5,
     "num_outputs": 1,
     "positive_threshold": 0.65
   },
