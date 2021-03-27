@@ -9,6 +9,14 @@ def invqfunc(x):
     return np.sqrt(2)*sp.erfinv(1-2*x)
 
 
+def window_pow(x):
+    return np.mean(x**2)
+
+
+def window_pow_db(x):
+    return np.log10(np.mean(x**2))
+
+
 def scale(x, out_range=(0, 1), axis=None):
     domain = np.min(x, axis), np.max(x, axis)
     y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
