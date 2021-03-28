@@ -9,7 +9,7 @@ from pathlib import Path
 from tensorflow_addons.metrics import F1Score
 from tensorflow.keras.metrics import Recall, Precision
 from tensorflow.keras.callbacks import ModelCheckpoint
-from src.models.deep_energy_detector import build_model
+from src.models.deep_energy_detector import build_seq_model, build_resid_model
 from src.model_dev.data_preprocessing import TimeSeriesFeeder
 
 
@@ -79,9 +79,9 @@ def train_energy_detector(config_path, model_name, model=None):
     if model is None:
         num_inputs = len(input_features)
 
-        model = build_model(input_dim=num_inputs, output_dim=num_outputs,
-                            window_dim=window_dim, custom_metrics=m_metrics,
-                            learn_rate=lr_rate)
+        model = build_resid_model(input_dim=num_inputs, output_dim=num_outputs,
+                                  window_dim=window_dim, custom_metrics=m_metrics,
+                                  learn_rate=lr_rate)
 
     checkpoint_filepath = get_saving_model_path(configs, model_name)
     model_checkpoint_callback = ModelCheckpoint(

@@ -3,13 +3,15 @@ import pandas as pd
 from pathlib import Path
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from sklearn.preprocessing import PowerTransformer
+from sklearn.decomposition import PCA
 from src.utilities import scale
 
 
 class TimeSeriesFeeder:
     def __init__(self, data_path: Path, x_features: list, y_features: list,
                  window_dim: int, feed_batch: int, stride: int = 1,
-                 min_max_scale: bool = True, pow_transform: bool = True):
+                 min_max_scale: bool = True, pow_transform: bool = True,
+                 pca_transform=False):
         self.data_path = data_path
         self.exogenous_features = x_features
         self.endogenous_features = y_features
@@ -18,6 +20,7 @@ class TimeSeriesFeeder:
         self.stride = stride
         self.min_max_scale = min_max_scale
         self.pow_transform = pow_transform
+        self.pca_transform = pca_transform
         self.generator = self._init_generator()
 
     def _init_generator(self):
@@ -38,6 +41,13 @@ class TimeSeriesFeeder:
                                                                             self.exogenous_features])
         return transform_df
 
+    def apply_pca_transform(self, df, components=None):
+        if components is None:
+            components = len(self.exogenous_features) % 2 + 1
+        pca_t = PCA(n_components=components)
+        pca_data = pca_t.fit_transform(df)
+        return pca_data
+
     def get_data_from_path(self):
         if 'csv' in self.data_path.suffix:
             return pd.read_csv(str(self.data_path))
@@ -52,6 +62,8 @@ class TimeSeriesFeeder:
                 df = df.apply(scale, axis=0)
             if self.pow_transform:
                 df = self.apply_powtransform(df)
+            if self.pca_transform:
+                df.loc[:, self.exogenous_features] = self.apply_pca_transform(df.loc[:, self.exogenous_features])
             dfs.append(df)
         return pd.concat(dfs, axis=0)
 
