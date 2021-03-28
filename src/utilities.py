@@ -1,3 +1,4 @@
+import pywt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,6 +16,22 @@ def window_pow(x):
 
 def window_pow_db(x):
     return np.log10(np.mean(x**2))
+
+
+def pow_c_a_dwt(x):
+    c_a, _ = pywt.dwt(x, 'db3')
+    return window_pow_db(c_a)
+
+
+def pow_c_d_dwt(x):
+    _, c_d = pywt.dwt(x, 'db3')
+    return window_pow_db(c_d)
+
+
+def logistic_map(x, g_rate=0.6):
+    pop = np.sum(np.histogram(x, 'fd', density=True)[1])
+    log_map = pop * g_rate * (1 - pop)
+    return abs(np.log2(abs(log_map)))
 
 
 def shannon_entropy(x):

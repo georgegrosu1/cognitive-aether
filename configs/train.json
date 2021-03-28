@@ -8,7 +8,7 @@
   },
   "model_cfg": {
     "window_size": 100,
-    "input_features": ["RX_OFDM", "sigma"],
+    "input_features": ["RE_RX_OFDM", "IM_RX_OFDM", "sigma", "RX_POW_DB"],
     "output_features": ["USER"],
     "lr_rate": 5e-5,
     "num_outputs": 1,
