@@ -36,8 +36,7 @@ class ChannelModel(MetaChannel):
 
     def slow_fading_channel(self):
         arr = []
-        arr_len = int(np.random.uniform(3, 10))
-        for coef in range(arr_len + 1):
+        for coef in range(self.total_carriers_ch + 1):
             ignore_flag = np.random.randint(low=0, high=2, size=1)[0]
             re, im = np.random.uniform(low=0.0, high=1.0), np.random.uniform(low=0.0, high=1.0)
             w = re + complex(im)
@@ -73,8 +72,7 @@ class ChannelModel(MetaChannel):
 
         # z is the complex coefficient representing channel, you can think of this as a phase shift and magnitude scale
         z = (1 / np.sqrt(num_paths)) * (x + 1j * y)  # this is what you would actually use when simulating the channel
-
-        return z
+        return np.fft.fft(z, self.total_carriers_ch)
 
     def rician_multipath_fading_channel(self):
         # For self.k_rice=0 this model is theoretically equivalent to Rayleigh fading model
@@ -102,7 +100,7 @@ class ChannelModel(MetaChannel):
             p, q = calculate_means(r_hat, k_rice)
             sigma = scattered_component(r_hat, k_rice)
             multipath_fading = generate_gaussian_noise(p, sigma, fs) + (1j * generate_gaussian_noise(q, sigma, fs))
-            return multipath_fading
+            return np.fft.fft(multipath_fading, self.total_carriers_ch)
 
         return complex_multipath_fading(self.r_hat_rice, self.k_rice, self.sim_sample_rate)
 
