@@ -8,10 +8,11 @@ from src.utilities import scale
 
 
 class TimeSeriesFeeder:
-    def __init__(self, data_path: Path, x_features: list, y_features: list,
+    def __init__(self, x_features: list, y_features: list,
                  window_dim: int, feed_batch: int, stride: int = 1,
                  min_max_scale: bool = True, pow_transform: bool = True,
-                 pca_transform=False):
+                 pca_transform=False, data_path: Path = None,
+                 use_dataframe: pd.DataFrame = None, shuffle=False):
         self.data_path = data_path
         self.exogenous_features = x_features
         self.endogenous_features = y_features
@@ -21,15 +22,21 @@ class TimeSeriesFeeder:
         self.min_max_scale = min_max_scale
         self.pow_transform = pow_transform
         self.pca_transform = pca_transform
+        self.use_dataframe = use_dataframe
+        self.shuffle = shuffle
         self.generator = self._init_generator()
 
     def _init_generator(self):
-        main_dataframe = self.get_data_from_path()
+        assert (self.use_dataframe is not None) | (self.data_path is not None), "Provide a dataframe or data path"
+        if self.use_dataframe is None:
+            main_dataframe = self.get_data_from_path()
+        else:
+            main_dataframe = self.use_dataframe
         x_data = main_dataframe.loc[:, self.exogenous_features].to_numpy()
         y_data = main_dataframe.loc[:, self.endogenous_features].to_numpy()
         generator = TimeseriesGenerator(x_data, y_data, length=self.window_dim,
                                         batch_size=self.feed_batch,
-                                        stride=self.stride, shuffle=True)
+                                        stride=self.stride, shuffle=self.shuffle)
 
         return generator
 

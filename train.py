@@ -63,12 +63,14 @@ def train_energy_detector(config_path, model_name, model=None):
                                     x_features=input_features,
                                     y_features=output_features,
                                     window_dim=window_dim,
-                                    feed_batch=batch_size)
+                                    feed_batch=batch_size,
+                                    shuffle=True)
     eval_feeder = TimeSeriesFeeder(data_path=validation_path,
                                    x_features=input_features,
                                    y_features=output_features,
                                    window_dim=window_dim,
-                                   feed_batch=batch_size)
+                                   feed_batch=batch_size,
+                                   shuffle=False)
 
     f1_score = F1Score(num_classes=2 ** num_outputs,
                        average="micro", threshold=pos_thresh)
