@@ -29,35 +29,40 @@ def get_nn_roc_vals(roc_test_df: pd.DataFrame, nn_model, model_cfg):
     return nn_tpr, nn_fpr, auc_keras
 
 
-def plot_roc(roc_test_df: pd.DataFrame, compare_signals, sensing_window=2, nn_model_setup: tuple = None):
+def plot_roc(roc_test_df: pd.DataFrame, compare_signals, json_cfg, sensing_window=2, nn_model=None):
 
     plt.figure(figsize=(15, 10))
 
     pfs = np.arange(0, 1, 0.01)
-    gt_sgn = nn_model_setup[1]['model_cfg']['output_features'][0]
+    gt_sgn = json_cfg['model_cfg']['output_features'][0]
+    gt_tps_num = len(np.where(roc_test_df.loc[(sensing_window-1):, gt_sgn] > 0)[0])
+    gt_tns_num = len(np.where(roc_test_df.loc[(sensing_window-1):, gt_sgn] == 0)[0])
+    window = sensing_window
     for signal in compare_signals:
-        pds = []
-        sigma = estimate_sigma(roc_test_df[signal], average_sigmas=True)
-        tps_num = len(np.where(roc_test_df[gt_sgn] > 0)[0])
+        pds_val, pfs_val = [], []
         for fals_proba in pfs:
-            positiv_cases = 0
-            window = sensing_window
-            for idx in range(0, len(roc_test_df[signal])):
-                if len(roc_test_df[signal]) - idx <= window:
-                    window -= 1
-                energy = abs(roc_test_df.loc[idx:(idx+window), signal])**2
-                fin_energy = np.mean(np.sum(energy))
-                thresh = sigma*(invqfunc(fals_proba))*(np.sqrt(2*window)+window)
-                if (fin_energy >= thresh) & (roc_test_df.loc[idx, gt_sgn] > 0):
-                    positiv_cases += 1
-            pd_val = positiv_cases/tps_num
-            pds.append(pd_val)
-        plt.plot(pfs, pds, label=signal)
+            true_positive_cases = 0
+            false_positive_cases = 0
+            for idx in range(window, len(roc_test_df[signal])):
+                slide_window_data = roc_test_df.loc[(idx-window):idx, signal].values
+                sigma = estimate_sigma(slide_window_data, average_sigmas=True)
+                energy = np.mean(abs(slide_window_data**2))
+                thresh = sigma*(invqfunc(fals_proba)) * (np.sqrt(2*window) + window)
+                if energy >= thresh:
+                    if roc_test_df.loc[idx, gt_sgn] > 0:
+                        true_positive_cases += 1
+                    else:
+                        false_positive_cases += 1
+            pd_val = true_positive_cases/gt_tps_num
+            pf_val = false_positive_cases/gt_tns_num
+            pds_val.append(pd_val)
+            pfs_val.append(pf_val)
+        plt.plot(pfs, pds_val, label=signal)
 
-    if nn_model_setup is not None:
+    if nn_model is not None:
         nn_tps, nn_fps, nn_auc_val = get_nn_roc_vals(roc_test_df=roc_test_df,
-                                                     nn_model=nn_model_setup[0],
-                                                     model_cfg=nn_model_setup[1])
+                                                     nn_model=nn_model,
+                                                     model_cfg=json_cfg)
         plt.plot(nn_fps, nn_tps, label='NN Model')
 
     plt.xlim(0, 1.1)
