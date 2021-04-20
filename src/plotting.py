@@ -43,7 +43,7 @@ def plot_roc(roc_test_df: pd.DataFrame, compare_signals, json_cfg, sensing_windo
         for fals_proba in pfs:
             true_positive_cases = 0
             false_positive_cases = 0
-            for idx in range(window, len(roc_test_df[signal])):
+            for idx in range(window, len(roc_test_df)):
                 slide_window_data = roc_test_df.loc[(idx-window):idx, signal].values
                 sigma = estimate_sigma(slide_window_data, average_sigmas=True)
                 energy = np.mean(abs(slide_window_data**2))

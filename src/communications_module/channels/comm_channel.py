@@ -49,7 +49,7 @@ class ChannelModel(MetaChannel):
 
     def rayleigh_multipath_fading_channel(self):
         """
-        # :param velocity: Velocity of RX or TX in Km/h
+        # :param velocity: Velocity of RX/tx relative to TX/rx in km/h
         # :param central_freq: Central frequency
         # :param sim_sample_rate: Sample rate of simulation
         # :param number_paths: Number of paths to sum
