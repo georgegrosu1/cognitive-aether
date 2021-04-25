@@ -116,10 +116,10 @@ class ChannelModel(MetaChannel):
         assert sigma != 0, "Sigma can not be 0"
         samples = num_draws * (num_draws > samples) + samples * (num_draws <= samples)
         i = np.random.standard_normal((samples,)) * sigma + mean
-        q = np.random.standard_normal((samples,))
+        q = np.random.standard_normal((samples,)) * sigma
         z = [complex(i[idx], q[idx]) for idx in range(len(i))]
-        drawn = [np.abs(z[np.random.randint(0, len(z) - 1)]) for _ in range(num_draws)]
-        return drawn
+        drawn = [z[np.random.randint(0, len(z) - 1)] for _ in range(num_draws)]
+        return np.abs(drawn)
 
     @staticmethod
     def get_linear_ch_magnitude(ch_resp):
