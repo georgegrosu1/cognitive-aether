@@ -56,6 +56,7 @@ class ChannelModel(MetaChannel):
         """
         assert (self.velocity is not None) & (self.fc is not None) & (self.sim_sample_rate is not None) \
                & (self.number_paths is not None), 'Make sure class attributes are not None'
+        z_init = [1, 0]
         fc = self.fc  # RF carrier frequency in Hz
         fs = self.sim_sample_rate  # sample rate of simulation
         num_paths = self.number_paths  # number of sinusoids to sum
@@ -72,6 +73,7 @@ class ChannelModel(MetaChannel):
 
         # z is the complex coefficient representing channel, you can think of this as a phase shift and magnitude scale
         z = (1 / np.sqrt(num_paths)) * (x + 1j * y)  # this is what you would actually use when simulating the channel
+        z = np.hstack([z_init, z])
         return np.fft.fft(z, self.total_carriers_ch)
 
     def rician_multipath_fading_channel(self):
@@ -97,12 +99,27 @@ class ChannelModel(MetaChannel):
 
         def complex_multipath_fading(r_hat, k_rice, fs):
             # complex_Multipath_Fading generates the complex fading random variables
+            z_init = [1, 0]
             p, q = calculate_means(r_hat, k_rice)
             sigma = scattered_component(r_hat, k_rice)
             multipath_fading = generate_gaussian_noise(p, sigma, fs) + (1j * generate_gaussian_noise(q, sigma, fs))
-            return np.fft.fft(multipath_fading, self.total_carriers_ch)
+            z = np.hstack([z_init, multipath_fading])
+            return np.fft.fft(z, self.total_carriers_ch)
 
         return complex_multipath_fading(self.r_hat_rice, self.k_rice, self.sim_sample_rate)
+
+    def tapped_delay_channel(self, delays: list, fading_type: str):
+        raise NotImplemented
+
+    @staticmethod
+    def draw_from_distribution(num_draws: int, mean: int = 0, sigma: float = 1, samples: int = 10000):
+        assert sigma != 0, "Sigma can not be 0"
+        samples = num_draws * (num_draws > samples) + samples * (num_draws <= samples)
+        i = np.random.standard_normal((samples,)) * sigma + mean
+        q = np.random.standard_normal((samples,))
+        z = [complex(i[idx], q[idx]) for idx in range(len(i))]
+        drawn = [np.abs(z[np.random.randint(0, len(z) - 1)]) for _ in range(num_draws)]
+        return drawn
 
     @staticmethod
     def get_linear_ch_magnitude(ch_resp):

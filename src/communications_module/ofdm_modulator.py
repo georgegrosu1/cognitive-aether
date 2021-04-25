@@ -14,6 +14,7 @@ class OFDMModulator:
         self.bits_per_sym = bits_per_sym
         self.rx_snr = rx_snr
         self.cyclic_prefix = self.subcarriers // self.cp_ratio_numitor
+        self.ofdm_sym_len = self.subcarriers + self.cyclic_prefix
         self.pilot_default = 3 + 3j
         self.subcarriers_idxs = self.get_subcarriers_idxs()
         self.pilots_idxs = self.get_pilots_idxs()
