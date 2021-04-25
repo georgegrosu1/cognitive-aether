@@ -114,6 +114,8 @@ class ChannelModel(MetaChannel):
     @staticmethod
     def draw_from_distribution(num_draws: int, mean: int = 0, sigma: float = 1, samples: int = 10000):
         assert sigma != 0, "Sigma can not be 0"
+        if (mean == 0) and (sigma == 1):
+            return np.random.rayleigh(size=(num_draws, ))
         samples = num_draws * (num_draws > samples) + samples * (num_draws <= samples)
         i = np.random.standard_normal((samples,)) * sigma + mean
         q = np.random.standard_normal((samples,)) * sigma
