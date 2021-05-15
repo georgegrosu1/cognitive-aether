@@ -45,7 +45,8 @@ def plot_roc(roc_test_df: pd.DataFrame, compare_signals, json_cfg, sensing_windo
             false_positive_cases = 0
             for idx in range(window, len(roc_test_df)):
                 slide_window_data = roc_test_df.loc[(idx-window):idx, signal].values
-                sigma = estimate_sigma(slide_window_data, average_sigmas=True)
+                slide_window_sigma = roc_test_df.loc[(idx - window):idx, 'sigma'].values
+                sigma = estimate_sigma(slide_window_sigma, average_sigmas=True)
                 energy = np.mean(abs(slide_window_data**2))
                 thresh = sigma*(invqfunc(fals_proba)) * (np.sqrt(2*window) + window)
                 if energy >= thresh:
