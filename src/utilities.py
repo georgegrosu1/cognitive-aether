@@ -43,16 +43,16 @@ def scale(x, out_range=(0, 1), axis=None):
     return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
 
 
-def get_bayes_denoised(x):
-    sigma_est = estimate_sigma(x, average_sigmas=True)
+def get_bayes_denoised(x, noise):
+    sigma_est = estimate_sigma(noise, average_sigmas=True)
     rx_bayes = denoise_wavelet(x, method='BayesShrink', mode='soft',
                                sigma=sigma_est / (1 + sigma_est), rescale_sigma=True)
 
     return rx_bayes
 
 
-def get_visu_denoised(x):
-    sigma_est = estimate_sigma(x, average_sigmas=True)
+def get_visu_denoised(x, noise):
+    sigma_est = estimate_sigma(noise, average_sigmas=True)
     rx_visu = denoise_wavelet(x, method='VisuShrink', mode='soft',
                               sigma=sigma_est / (1 + sigma_est * 20), rescale_sigma=True)
 
