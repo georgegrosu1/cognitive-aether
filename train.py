@@ -32,6 +32,7 @@ def get_abs_path(relative_path) -> Path:
 
 def get_saving_model_path(configs, model_name: str):
     save_dir = get_abs_path(configs['save_path']) / model_name
+    save_dir.mkdir(parents=True, exist_ok=True)
     model_name = model_name + '_epoch{epoch:02d}_vloss{val_loss:.2f}.hdf5'
     return save_dir / model_name
 
