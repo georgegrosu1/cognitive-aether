@@ -59,14 +59,15 @@ def build_resid_model(input_dim, output_dim, window_dim, custom_metrics: [],
 
     # 1st block
     batch_1st = BatchNormalization()(input_l)
-    conv1d_1st = Conv1D(32, (window_dim, ), padding='same', activation='relu')(batch_1st)
+    conv1d_1st = Conv1D(128, (window_dim, ), padding='same', activation='relu')(batch_1st)
     conv1_mpoll_1s = MaxPooling1D(padding='same')(conv1d_1st)
-    drop_1st = Dropout(0.5)(conv1_mpoll_1s)
-    lstm_1st = LSTM(units=16, return_sequences=False, unit_forget_bias=True)(drop_1st)
+    conv1d_2nd = Conv1D(64, (window_dim,), padding='same', activation='relu')(conv1_mpoll_1s)
+    drop_1st = Dropout(0.5)(conv1d_2nd)
+    lstm_1st = LSTM(units=3, return_sequences=False, unit_forget_bias=True)(drop_1st)
 
     # 2nd block
     batch_2nd = BatchNormalization()(input_l)
-    lstm_2nd = LSTM(units=16, return_sequences=False, unit_forget_bias=True)(batch_2nd)
+    lstm_2nd = LSTM(units=3, return_sequences=False, unit_forget_bias=True)(batch_2nd)
 
     # residual connect
     conn_node1 = Add()([lstm_1st, lstm_2nd])
