@@ -2,8 +2,8 @@
 
 ## Python framework for development of classical and advanced energy detection solutions in cognitive radio networks.
 
-This framework offers an environment to generate OFDM data, transmit it over different channels (AWGN slow fading, Rayleigh, Rice) and receive it with channel distortions.
-All processed signals (Gray code, OFDM TX, OFDM RX, noise, convolved, Bayes Shrink RX denoised, Visu Shrking RX denoised) can be saved in pandas DataFrames and CSV files. Furthermore, this framework aims to support development of Machine Learning / Deep Learning solutions through the posibility of synthesizing datasets with a wide spectrum of channel variations and signal distortions in controlled conditions, thus one can explore perfectly balanced dataset, unbalanced dataset, specific scenarious and cotexts.
+This framework aims to offer an environment to generate OFDM data, simulate its transmition over different channels (AWGN, Rayleigh Flat/Frequency Selectiv Fading, Rice Flat/Frequency Selectiv Fading) and receive it with corresponding distortions.
+All processed signals (Gray code, QAM, OFDM TX, OFDM RX, noise, convolved, Bayes Shrink RX denoised, Visu Shrking RX denoised) can be saved in pandas DataFrames and CSV files. Furthermore, this framework aims to support development of Machine Learning / Deep Learning solutions through the posibility of synthesizing datasets with a wide spectrum of channel variations and signal distortions in controlled conditions, thus one can explore perfectly balanced or unbalanced datasets, specific scenarious and contexts.
 
 NOTE: The development of this framework is in progress and more features are about to come.
 
