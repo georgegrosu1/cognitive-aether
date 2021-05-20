@@ -49,6 +49,7 @@ class OFDMModulator:
             amp += step
         return sorted(neg_amps + pos_amps)
 
+    # TODO: Remove when sure its not required anymore
     def init_channel_response(self):
         ch_response = np.array([0.1, 0.2+0.17j, 0.1+0.3j, 0.412+0.051j])
         return np.fft.fft(ch_response, self.subcarriers)
@@ -58,7 +59,7 @@ class OFDMModulator:
 
     def generate_payload(self):
         ignore_flag = np.random.randint(low=0, high=2, size=1)[0]
-        bits = np.random.binomial(n=1, p=0.3, size=(self.payload_per_ofdm,))
+        bits = np.random.binomial(n=1, p=0.5, size=(self.payload_per_ofdm,))
         payload_words = self.serial_2_parallel(bits)
         return payload_words, ignore_flag
 
@@ -81,7 +82,7 @@ class OFDMModulator:
 
         return mapping_table
 
-    def ofdm_symbol(self, qam_payload, ioja):
+    def payload_and_pilots_mapping(self, qam_payload, ioja):
         symbol = np.zeros(self.subcarriers, dtype=complex)  # the overall K subcarriers
         if not bool(ioja):
             symbol[self.pilots_idxs] = self.pilot_default  # allocate the pilot subcarriers
@@ -95,6 +96,24 @@ class OFDMModulator:
     def add_cyclic_prefix(self, ofdm_symbol_time_domain):
         cp = ofdm_symbol_time_domain[-self.cyclic_prefix:]  # take the last CP samples ...
         return np.hstack([cp, ofdm_symbol_time_domain])  # ... and add them to the beginning
+
+    def generate_ofdm_symbol(self, force_flag: bool = False):
+        payload, flag = self.generate_payload()
+        if force_flag:
+            flag = False
+        qam_load = self.map_words_2_qam(payload)
+        ofdm_mapping = self.payload_and_pilots_mapping(qam_load, flag)
+        ofdm_ift_time_domain = self.ofdm_idft(ofdm_mapping)
+        ofdm_w_cp = self.add_cyclic_prefix(ofdm_ift_time_domain)
+        return ofdm_w_cp
+
+    def generate_ofdm_tx_signal(self, ofdm_symbols: int, continuous_transmission: bool = False):
+        ofdm_tx_signal = np.array([])
+        for _ in range(ofdm_symbols):
+            ofdm_sym = self.generate_ofdm_symbol(continuous_transmission)
+            ofdm_tx_signal = np.append(ofdm_sym, ofdm_tx_signal, axis=0)
+
+        return ofdm_tx_signal
 
     @staticmethod
     def get_snr_context_rescale_factor(rx_snr, noise, convolved_sgn):
