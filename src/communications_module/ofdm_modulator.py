@@ -22,7 +22,10 @@ class OFDMModulator:
         self.payload_per_ofdm = len(self.data_carriers_idxs) * self.bits_per_sym
         # number of payload bits per OFDM symbol
         self.mapping_table = self.init_mapping_table()
-        self.channel_response = fading_channel.ch_response
+        self.fading_channel = fading_channel
+
+    def get_ch_response(self):
+        return self.fading_channel.ch_response
 
     def get_subcarriers_idxs(self):
         return np.arange(self.subcarriers)
@@ -106,8 +109,10 @@ class OFDMModulator:
         return factor, noise_power, req_sgn_power
 
     def ofdm_over_channel(self, ofdm_signal):
-
-        convolved = np.convolve(ofdm_signal, self.channel_response, mode='same')
+        if 'awgn' in self.fading_channel.channel_type:
+            convolved = ofdm_signal
+        else:
+            convolved = np.convolve(ofdm_signal, self.get_ch_response(), mode='same')
         if np.isrealobj(ofdm_signal):
             n = (np.random.standard_normal(convolved.shape))
         else:
