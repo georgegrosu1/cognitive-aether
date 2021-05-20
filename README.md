@@ -2,7 +2,7 @@
 
 ## Python framework for development of classical and advanced energy detection solutions in cognitive radio networks.
 
-This framework aims to offer an environment to generate OFDM data, simulate its transmition over different channels (AWGN, Rayleigh Flat/Frequency Selectiv Fading, Rice Flat/Frequency Selectiv Fading) and receive it with corresponding distortions.
+This framework aims to offer an environment to generate OFDM data, simulate its transmition over different channels (AWGN, Rayleigh Flat/Frequency Selectiv Fading, Rice Flat/Frequency Selectiv Fading) and receive it with corresponding distortions based on which experiments can be performed. The framework is oriented towards research in fields of Spectrum Sensing and Cognitive Radio, for which focus is on the development of a consistent baseline of tools (Energy Detection algorithm, Machine Learning).
 All processed signals (Gray code, QAM, OFDM TX, OFDM RX, noise, convolved, Bayes Shrink RX denoised, Visu Shrking RX denoised) can be saved in pandas DataFrames and CSV files. Furthermore, this framework aims to support development of Machine Learning / Deep Learning solutions through the posibility of synthesizing datasets with a wide spectrum of channel variations and signal distortions in controlled conditions, thus one can explore perfectly balanced or unbalanced datasets, specific scenarious and contexts.
 
 NOTE: The development of this framework is in progress and more features are about to come.
