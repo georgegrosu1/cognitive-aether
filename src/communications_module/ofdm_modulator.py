@@ -1,18 +1,19 @@
 import numpy as np
 from sympy.combinatorics.graycode import GrayCode
 
-from .channels.comm_channel import ChannelModel
-
 
 class OFDMModulator:
 
-    def __init__(self, bits_per_sym: int(), subcarriers: int(), cp_ratio_numitor, num_pilots: int(), rx_snr: float,
-                 fading_channel: ChannelModel):
+    def __init__(self,
+                 bits_per_sym: int(),
+                 subcarriers: int(),
+                 cp_ratio_numitor,
+                 num_pilots: int()):
+
         self.subcarriers = subcarriers
         self.cp_ratio_numitor = cp_ratio_numitor
         self.num_pilots = num_pilots
         self.bits_per_sym = bits_per_sym
-        self.rx_snr = rx_snr
         self.cyclic_prefix = self.subcarriers // self.cp_ratio_numitor
         self.ofdm_sym_len = self.subcarriers + self.cyclic_prefix
         self.pilot_default = 3 + 3j
@@ -22,10 +23,6 @@ class OFDMModulator:
         self.payload_per_ofdm = len(self.data_carriers_idxs) * self.bits_per_sym
         # number of payload bits per OFDM symbol
         self.mapping_table = self.init_mapping_table()
-        self.fading_channel = fading_channel
-
-    def get_ch_response(self):
-        return self.fading_channel.ch_response
 
     def get_subcarriers_idxs(self):
         return np.arange(self.subcarriers)
@@ -97,7 +94,7 @@ class OFDMModulator:
         cp = ofdm_symbol_time_domain[-self.cyclic_prefix:]  # take the last CP samples ...
         return np.hstack([cp, ofdm_symbol_time_domain])  # ... and add them to the beginning
 
-    def generate_ofdm_symbol(self, force_flag: bool = False):
+    def generate_ofdm_symbol(self, force_flag: bool = True):
         payload, flag = self.generate_payload()
         if force_flag:
             flag = False
@@ -114,34 +111,6 @@ class OFDMModulator:
             ofdm_tx_signal = np.append(ofdm_sym, ofdm_tx_signal, axis=0)
 
         return ofdm_tx_signal
-
-    @staticmethod
-    def get_snr_context_rescale_factor(rx_snr, noise, convolved_sgn):
-        sigma = 10 ** (rx_snr / 10)
-        noise_power = np.mean(abs(noise ** 2))
-        req_sgn_power = sigma * noise_power
-        initial_sgn_power = np.mean(abs(convolved_sgn ** 2))
-        factor = np.sqrt(req_sgn_power) / np.sqrt(initial_sgn_power)
-        print(f'Required signal power: {req_sgn_power} [W]=[V^2]'
-              f'\nInitial signal power: {initial_sgn_power} [W]=[V^2]'
-              f'\nSignal amplitude rescale factor: {factor} [Volts]')
-        return factor, noise_power, req_sgn_power
-
-    def ofdm_over_channel(self, ofdm_signal):
-        if 'awgn' in self.fading_channel.channel_type:
-            convolved = ofdm_signal
-        else:
-            convolved = np.convolve(ofdm_signal, self.get_ch_response(), mode='same')
-        if np.isrealobj(ofdm_signal):
-            n = (np.random.standard_normal(convolved.shape))
-        else:
-            n = (np.random.standard_normal(convolved.shape) + 1j * np.random.standard_normal(convolved.shape))
-        factor, noise_power, _ = self.get_snr_context_rescale_factor(self.rx_snr, n, convolved)
-        convolved = factor * convolved
-        signal_power = np.mean(abs(convolved ** 2))
-        snr_db = 10 * np.log10(signal_power / noise_power)
-        print("RX Signal power: %.4f. Noise power: %.4f, SNR [dB]: %.4f" % (signal_power, noise_power, snr_db))
-        return convolved + n, n
 
     def remove_cyclic_prefix(self, rx_ofdm_signal):
         return rx_ofdm_signal[self.cyclic_prefix:(self.cyclic_prefix + self.subcarriers)]
