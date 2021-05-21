@@ -8,7 +8,7 @@ class TDLChannel:
                  x_in: np.array,
                  num_taps: int,
                  dist_mean: float = 0,
-                 dist_sigma: float = 1):
+                 dist_sigma: float = 1 / np.sqrt(2)):
         """
         This is a complete stochastic method implementation for Rayleigh/Rician frequency selective channel
         :parameter x_in a np.array containing samples of input signal
@@ -25,12 +25,28 @@ class TDLChannel:
         self.tdl_compelx_coeffs = self._init_tdl_coeffs()
 
     def _init_tdl_coeffs(self):
+
+        def replace_overunity_coeffs(h_z):
+            replace_with = np.array([])
+            exceeded_idxs = np.where(abs(h_z) >= 1)[0]
+            if len(exceeded_idxs) > 0:
+                clean_h = np.delete(h_z, exceeded_idxs)
+                while len(replace_with) != len(exceeded_idxs):
+                    new_coeff = 1 / np.sqrt(2) * draw_from_distribution(samples=1,
+                                                                        mean=self.dist_mean,
+                                                                        sigma=self.dist_sigma)
+                    if abs(new_coeff) < 1:
+                        replace_with = np.append(replace_with, new_coeff, axis=0)
+                h_z = np.append(clean_h, replace_with, axis=0)
+            return h_z
+
         def get_normalized_ch(taps):
-            return 1 / np.sqrt(2) * draw_from_distribution(samples=taps, mean=self.dist_mean, sigma=self.dist_sigma)
+            return 1 / np.sqrt(self.num_taps) * draw_from_distribution(samples=taps, mean=self.dist_mean, sigma=self.dist_sigma)
 
         h = get_normalized_ch(self.num_taps)
+        cleaned_h = replace_overunity_coeffs(h)
 
-        return h
+        return cleaned_h
 
     def filter_x_in(self):
         y_out = np.convolve(self.x_in, self.tdl_compelx_coeffs, mode='same')
