@@ -82,12 +82,12 @@ class FadingChannel:
 
         return a_k_multipaths
 
-    def generate_gmeds_tap_weights(self, a_k_paths, sample_period, discrete_delays):
+    def generate_gmeds_tap_weights(self, a_k_paths, sample_period):
         tap_weights = []
         for n in range(-self.__n1n2_sinusoids[0], self.__n1n2_sinusoids[1] + 1):
             g_n = np.zeros(shape=a_k_paths[0].shape, dtype=np.complex)
             for k in range(len(a_k_paths)):
-                g_n += a_k_paths[k] * np.sinc((discrete_delays[k] / sample_period) - n)
+                g_n += a_k_paths[k] * np.sinc((self.model.discrete_path_delays[k] / sample_period) - n)
             tap_weights.append(g_n)
 
         return tap_weights
@@ -95,9 +95,7 @@ class FadingChannel:
     def gmeds_fading_ch(self):
         num_samples = self.x_in.shape[0]
         a_k_mpaths = self.gmeds_algo_complex_coeffs(num_samples)
-        gn_tap_weights = self.generate_gmeds_tap_weights(a_k_mpaths,
-                                                         1/self.model.sample_rate,
-                                                         self.model.discrete_path_delays)
+        gn_tap_weights = self.generate_gmeds_tap_weights(a_k_mpaths, 1/self.model.sample_rate)
         return gn_tap_weights
 
     def filter_x_in(self):
