@@ -43,6 +43,13 @@ def scale(x, out_range=(0, 1), axis=None):
     return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
 
 
+def draw_from_distribution(mean: float = 0, sigma: float = 1, samples: int = 1):
+    assert sigma != 0, "Sigma can not be 0"
+    z = np.random.standard_normal((samples*2,)).view(np.complex)
+    z = sigma * ((z.real + mean) + (z.imag * 1j))
+    return z
+
+
 def get_bayes_denoised(x, noise):
     sigma_est = estimate_sigma(noise, average_sigmas=True)
     rx_bayes = denoise_wavelet(x, method='BayesShrink', mode='soft',
@@ -57,3 +64,24 @@ def get_visu_denoised(x, noise):
                               sigma=sigma_est / (1 + sigma_est * 20), rescale_sigma=True)
 
     return rx_visu
+
+
+def get_db_magnitude(linear_response):
+    z_mag = np.abs(linear_response)
+    return 10 * np.log10(z_mag**2)
+
+
+def snr_db_to_linear(snr_db):
+    return 10 ** (snr_db / 10)
+
+
+def get_snr_context_rescale_factor(x_in, noise, rx_snr):
+    sigma = 10 ** (rx_snr / 10)
+    noise_power = np.mean(abs(noise ** 2))
+    req_sgn_power = sigma * noise_power
+    initial_sgn_power = np.mean(abs(x_in ** 2))
+    factor = np.sqrt(req_sgn_power) / np.sqrt(initial_sgn_power)
+    print(f'Required signal power: {req_sgn_power} [W]=[V^2]'
+          f'\nInitial signal power: {initial_sgn_power} [W]=[V^2]'
+          f'\nSignal amplitude rescale factor: {factor} [Volts]')
+    return factor, noise_power, req_sgn_power
