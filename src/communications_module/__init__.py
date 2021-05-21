@@ -1,1 +1,1 @@
-from ofdm_modulator import OFDMModulator
+from src.communications_module.ofdm_modulator import OFDMModulator
