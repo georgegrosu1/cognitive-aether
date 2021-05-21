@@ -19,7 +19,7 @@ class TDLChannel:
         """
 
         self.x_in = x_in
-        self.num_taps = num_taps
+        self.num_taps = num_taps * 2
         self.dist_mean = dist_mean
         self.dist_sigma = dist_sigma
         self.tdl_compelx_coeffs = self._init_tdl_coeffs()
@@ -41,9 +41,12 @@ class TDLChannel:
             return h_z
 
         def get_normalized_ch(taps):
-            return 1 / np.sqrt(self.num_taps) * draw_from_distribution(samples=taps, mean=self.dist_mean, sigma=self.dist_sigma)
+            return 1 / np.sqrt(self.num_taps) * draw_from_distribution(samples=taps,
+                                                                       mean=self.dist_mean,
+                                                                       sigma=self.dist_sigma)
 
-        h = get_normalized_ch(self.num_taps)
+        h = np.append(np.zeros(shape=(int(np.ceil(self.num_taps/2)),)),
+                      get_normalized_ch(int(np.ceil(self.num_taps/2))))
         cleaned_h = replace_overunity_coeffs(h)
 
         return cleaned_h
