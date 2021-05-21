@@ -6,14 +6,19 @@ from src.utilities import scale
 
 class ChannelModel(MetaChannel):
 
-    def __init__(self, total_carriers_over_ch, channel_type='slow_fading', scaled_ch=True, velocity=None, fc=None,
-                 number_paths=None, k_rice=None, r_hat_rice=None):
+    def __init__(self,
+                 total_carriers_over_ch,
+                 channel_type='awgn',
+                 scaled_ch=True, f_d=1,
+                 k_rice: list = None,
+                 number_paths=None,
+                 r_hat_rice=None,):
+
         super().__init__(channel_type)
         self.total_carriers_ch = total_carriers_over_ch
         self.channel_type = channel_type
         self.scaled_ch = scaled_ch
-        self.velocity = velocity
-        self.fc = fc
+        self.f_d = f_d
         self.sim_sample_rate = total_carriers_over_ch
         self.number_paths = number_paths
         self.k_rice = k_rice
@@ -24,11 +29,11 @@ class ChannelModel(MetaChannel):
 
         def get_channel_by_type():
             ch_fading_dict = {
-                'slow_fading': self.slow_fading_channel(),
+                'awgn': None,
                 'rayleigh_fading': self.rayleigh_multipath_fading_channel(),
-                'rician_fading': self.rician_multipath_fading_channel()
+                'rician_fading': self.rician_multipath_fading_channel(),
             }
-            if self.scaled_ch:
+            if self.scaled_ch & ('awgn' not in self.channel_type):
                 return scale(ch_fading_dict[self.channel_type])
             return ch_fading_dict[self.channel_type]
 
@@ -54,14 +59,12 @@ class ChannelModel(MetaChannel):
         # :param sim_sample_rate: Sample rate of simulation
         # :param number_paths: Number of paths to sum
         """
-        assert (self.velocity is not None) & (self.fc is not None) & (self.sim_sample_rate is not None) \
-               & (self.number_paths is not None), 'Make sure class attributes are not None'
-        z_init = [1, 0]
-        fc = self.fc  # RF carrier frequency in Hz
+        if 'rayleigh_fading' in self.channel_type:
+            assert (self.f_d is not None) & (self.sim_sample_rate is not None) \
+                   & (self.number_paths is not None), 'Make sure class attributes are not None'
         fs = self.sim_sample_rate  # sample rate of simulation
         num_paths = self.number_paths  # number of sinusoids to sum
-        v_ms = self.velocity * 1000 / 3600  # convert to m/s
-        fd = v_ms * fc / 3e8  # max Doppler shift
+        fd = self.f_d  # max Doppler shift
         t = np.arange(0, 1, 1 / fs)  # time vector. (start, stop, step)
         x = np.zeros(len(t))
         y = np.zeros(len(t))
@@ -73,7 +76,6 @@ class ChannelModel(MetaChannel):
 
         # z is the complex coefficient representing channel, you can think of this as a phase shift and magnitude scale
         z = (1 / np.sqrt(num_paths)) * (x + 1j * y)  # this is what you would actually use when simulating the channel
-        z = np.hstack([z_init, z])
         return np.fft.fft(z, self.total_carriers_ch)
 
     def rician_multipath_fading_channel(self):
@@ -107,27 +109,3 @@ class ChannelModel(MetaChannel):
             return np.fft.fft(z, self.total_carriers_ch)
 
         return complex_multipath_fading(self.r_hat_rice, self.k_rice, self.sim_sample_rate)
-
-    def tapped_delay_channel(self, delays: list, fading_type: str):
-        raise NotImplemented
-
-    @staticmethod
-    def draw_from_distribution(num_draws: int, mean: int = 0, sigma: float = 1, samples: int = 10000):
-        assert sigma != 0, "Sigma can not be 0"
-        if (mean == 0) and (sigma == 1):
-            return np.random.rayleigh(size=(num_draws, ))
-        samples = num_draws * (num_draws > samples) + samples * (num_draws <= samples)
-        i = np.random.standard_normal((samples,)) * sigma + mean
-        q = np.random.standard_normal((samples,)) * sigma
-        z = [complex(i[idx], q[idx]) for idx in range(len(i))]
-        drawn = [z[np.random.randint(0, len(z) - 1)] for _ in range(num_draws)]
-        return np.abs(drawn)
-
-    @staticmethod
-    def get_linear_ch_magnitude(ch_resp):
-        return np.abs(ch_resp)
-
-    @staticmethod
-    def get_db_ch_magnitude(ch_resp):
-        z_mag = np.abs(ch_resp)
-        return 10 * np.log10(z_mag)
