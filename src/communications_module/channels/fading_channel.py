@@ -13,6 +13,7 @@ class FadingChannel:
                  max_doppler_shift: int,
                  sample_rate: int = None,
                  num_sinusoids: int = 20,
+                 __n1n2_sinusoids: list = (30, 31),
                  k_factors: list = (),
                  los_doppler_shifts: list = (0,),
                  los_init_phases: list = (0,)):
@@ -33,7 +34,8 @@ class FadingChannel:
         self.x_in = x_in
         assert num_sinusoids > 0, 'Number of sinusoids must be positive integer'
         self.sample_rate = _init_sample_rate()
-        self.__n1n2_sinusoids = (num_sinusoids, num_sinusoids + 1)
+        self.k_factors = k_factors
+        self.__n1n2_sinusoids = __n1n2_sinusoids
         self.model = _init_channel_model()
         self.gmeds_tap_weights = self._init_gmeds_ch_taps()
 
@@ -72,7 +74,7 @@ class FadingChannel:
         a_k_multipaths = []
         z_multipaths = self.mutually_uncorr_fading_waveforms(num_samples)
         for idx, z_path in enumerate(z_multipaths):
-            coeff_idx = idx * (len(self.model.k_factors) > 1)
+            coeff_idx = idx * (len(self.k_factors) > 1)
             z_k = self.model.nth_path_complex_coeffs(z_path, coeff_idx)
             omega = self.rescale_factor_for_avg_gain(self.model.avg_path_gains[idx], z_k)
             a_k = np.sqrt(omega) * z_k
@@ -83,7 +85,7 @@ class FadingChannel:
     def generate_gmeds_tap_weights(self, a_k_paths, sample_period, discrete_delays):
         tap_weights = []
         for n in range(-self.__n1n2_sinusoids[0], self.__n1n2_sinusoids[1] + 1):
-            g_n = np.zeros(shape=a_k_paths[0].shape)
+            g_n = np.zeros(shape=a_k_paths[0].shape, dtype=np.complex)
             for k in range(len(a_k_paths)):
                 g_n += a_k_paths[k] * np.sinc((discrete_delays[k] / sample_period) - n)
             tap_weights.append(g_n)
@@ -99,7 +101,7 @@ class FadingChannel:
         return gn_tap_weights
 
     def filter_x_in(self):
-        y_out = np.zeros(shape=self.x_in.shape)
+        y_out = np.zeros(shape=self.x_in.shape, dtype=np.complex)
         padded_x_in = np.pad(self.x_in, (self.__n1n2_sinusoids[0], self.__n1n2_sinusoids[1]),
                              'constant', constant_values=(0, 0))
         i_idxs = [j for j in range(self.__n1n2_sinusoids[0], padded_x_in.shape[0]-self.__n1n2_sinusoids[1])]
