@@ -8,12 +8,11 @@ class RicianChannel(AbstractChannel):
                  discrete_path_delays: list,
                  avg_path_gains: list,
                  max_doppler_shift: int,
-                 sample_rate: int,
                  k_factors: list,
                  los_doppler_shifts: list,
                  los_init_phases: list):
 
-        super().__init__(discrete_path_delays, avg_path_gains, max_doppler_shift, sample_rate)
+        super().__init__(discrete_path_delays, avg_path_gains, max_doppler_shift)
         if (len(k_factors) != 1) | (len(los_doppler_shifts) != 1) | (len(los_init_phases) != 1):
             assert (len(k_factors) == len(los_doppler_shifts) == len(los_init_phases) == len(avg_path_gains)), \
                 'Rician parameters arrays length must match with length of path delays if not scalars'

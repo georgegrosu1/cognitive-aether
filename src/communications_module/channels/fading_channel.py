@@ -20,19 +20,20 @@ class FadingChannel:
 
         def _init_sample_rate():
             if sample_rate is None:
-                return 100 * x_in.shape[0]
+                return x_in.shape[0]
             return sample_rate
 
         def _init_channel_model():
             if channel_type == 'rician':
                 assert len(k_factors) > 0, 'Provide at least one K factor value'
-                return RicianChannel(discrete_path_delays, avg_path_gains, max_doppler_shift, self.sample_rate,
+                return RicianChannel(discrete_path_delays, avg_path_gains, max_doppler_shift,
                                      k_factors, los_doppler_shifts, los_init_phases)
             elif channel_type == 'rayleigh':
-                return RayleighChannel(discrete_path_delays, avg_path_gains, max_doppler_shift, self.sample_rate)
+                return RayleighChannel(discrete_path_delays, avg_path_gains, max_doppler_shift)
 
         self.x_in = x_in
         assert num_sinusoids > 0, 'Number of sinusoids must be positive integer'
+        self.num_sinusoids = num_sinusoids
         self.sample_rate = _init_sample_rate()
         self.k_factors = k_factors
         self.__n1n2_sinusoids = __n1n2_sinusoids
@@ -45,7 +46,7 @@ class FadingChannel:
         return self.gmeds_fading_ch()
 
     def compute_um_i(self, num_samples, re_or_im_idx, multipath_idx, waves_p_path):
-        t = np.arange(0, num_samples / self.model.sample_rate, 1 / self.model.sample_rate)
+        t = np.arange(0, num_samples / self.sample_rate, 1 / self.sample_rate)
         um = np.zeros(num_samples)
         for n in range(waves_p_path):
             alfa = ((-1) ** (re_or_im_idx - 1)) * (np.pi / (4 * waves_p_path)) * \
@@ -62,11 +63,11 @@ class FadingChannel:
             for re_im_idx in range(1, 3):
                 if re_im_idx == 1:
                     um_i = self.compute_um_i(num_samples, re_im_idx,
-                                             nth_multipath, self.__n1n2_sinusoids[0])
+                                             nth_multipath, self.num_sinusoids)
                     re_paths.append(um_i)
                 else:
                     um_i = self.compute_um_i(num_samples, re_im_idx,
-                                             nth_multipath, self.__n1n2_sinusoids[1])
+                                             nth_multipath, self.num_sinusoids+1)
                     im_paths.append(um_i)
             z_multipaths.append(np.array(re_paths[nth_multipath] + 1j * im_paths[nth_multipath]))
 
@@ -97,7 +98,7 @@ class FadingChannel:
     def gmeds_fading_ch(self):
         num_samples = self.x_in.shape[0]
         a_k_mpaths = self.gmeds_algo_complex_coeffs(num_samples)
-        gn_tap_weights = self.generate_gmeds_tap_weights(a_k_mpaths, 1/self.model.sample_rate)
+        gn_tap_weights = self.generate_gmeds_tap_weights(a_k_mpaths, 1/self.sample_rate)
         return gn_tap_weights
 
     def filter_x_in(self):
