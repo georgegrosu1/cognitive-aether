@@ -36,6 +36,8 @@ class FadingChannel:
         self.sample_rate = _init_sample_rate()
         self.k_factors = k_factors
         self.__n1n2_sinusoids = __n1n2_sinusoids
+        assert max_doppler_shift < 0.1 * self.sample_rate, 'The maximum Doppler shift must be less than 1/10 ' \
+                                                           'of the input signal sample rate'
         self.model = _init_channel_model()
         self.gmeds_tap_weights = self._init_gmeds_ch_taps()
 
