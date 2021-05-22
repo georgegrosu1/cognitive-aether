@@ -6,7 +6,7 @@ This framework aims to offer an environment to generate OFDM data, simulate its 
 All processed signals (Gray code, QAM, OFDM TX, OFDM RX, noise, convolved, Bayes Shrink RX denoised, Visu Shrking RX denoised) can be saved in pandas DataFrames and CSV files. Furthermore, this framework aims to support development of Machine Learning / Deep Learning solutions through the posibility of synthesizing datasets with a wide spectrum of channel variations and signal distortions in controlled conditions, thus one can explore perfectly balanced or unbalanced datasets, specific scenarious and contexts.
 
 ## A soft reimplementation of Mathworks Rayleigh & Rician Flat & Frequency Selective Fading Channel
-The framweork benefits of FadingChannel class which implements the same algorithm (Generalized Method for Exact Doppler Spread - GMEDS) as FadingChannel in Matlab - Communication Toolbox. Its usage is similar to the usage in Matlab with most of the tunable parameters of the blocks, making it possible for a wide range of radio channel simulations and datasets synthetization.
+The framweork benefits of FadingChannel class which implements the same algorithm (Generalized Method for Exact Doppler Spread - GMEDS) as FadingChannel in Matlab - Communication Toolbox. Its usage is similar to the usage in Matlab with most of the tunable parameters of the blocks, making it possible to simulate and synthesize data from a wide spectrum of scenarious regarding radio channel behaviours.
 
 NOTE: The development of this framework is in progress and more features are about to come.
 
