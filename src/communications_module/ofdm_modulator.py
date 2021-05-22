@@ -5,10 +5,10 @@ from sympy.combinatorics.graycode import GrayCode
 class OFDMModulator:
 
     def __init__(self,
-                 bits_per_sym: int(),
-                 subcarriers: int(),
-                 cp_ratio_numitor,
-                 num_pilots: int()):
+                 bits_per_sym: int,
+                 subcarriers: int,
+                 cp_ratio_numitor: float,
+                 num_pilots: int):
 
         self.subcarriers = subcarriers
         self.cp_ratio_numitor = cp_ratio_numitor
