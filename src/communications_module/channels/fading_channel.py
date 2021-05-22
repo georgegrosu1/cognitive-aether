@@ -87,7 +87,7 @@ class FadingChannel:
         for n in range(-self.__n1n2_sinusoids[0], self.__n1n2_sinusoids[1] + 1):
             g_n = np.zeros(shape=a_k_paths[0].shape, dtype=np.complex)
             for k in range(len(a_k_paths)):
-                g_n += a_k_paths[k] * np.sinc((self.model.discrete_path_delays[k] / sample_period) - n)
+                g_n += a_k_paths[k] * np.sinc((self.model.discrete_path_delays[k] / sample_period) + n)
             tap_weights.append(g_n)
 
         return tap_weights
