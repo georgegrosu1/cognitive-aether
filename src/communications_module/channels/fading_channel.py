@@ -58,6 +58,7 @@ class FadingChannel:
             alfa = ((-1) ** (re_or_im_idx - 1)) * (np.pi / (4 * waves_p_path)) * \
                    (multipath_idx / (self.model.num_paths + 2))
             f_kn = self.model.max_doppler_shift * np.cos((np.pi / (2 * waves_p_path)) * (n - 0.5) + alfa)
+            um += np.cos(2 * np.pi * f_kn * t + np.random.uniform(1e-9, 2 * np.pi))
             um += np.cos(2 * np.pi * f_kn * t + np.random.uniform(0.001, 2 * np.pi))
         return np.sqrt(2 / waves_p_path) * um
 
