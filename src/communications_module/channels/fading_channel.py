@@ -12,8 +12,7 @@ class FadingChannel:
                  avg_path_gains: list,
                  max_doppler_shift: int,
                  sample_rate: int = None,
-                 num_sinusoids: int = 20,
-                 __n1n2_sinusoids: list = (30, 31),
+                 num_sinusoids: int = 48,
                  k_factors: list = (),
                  los_doppler_shifts: list = (0,),
                  los_init_phases: list = (0,)):
@@ -22,6 +21,13 @@ class FadingChannel:
             if sample_rate is None:
                 return x_in.shape[0]
             return sample_rate
+
+        def _init_n1n2_sinusoids():
+            n1n2_sinusoids = (30, 31)
+            max_delay = np.max(discrete_path_delays)
+            if max_delay >= 1e-4:
+                return tuple((n1n2_sinusoids[0] * 10, n1n2_sinusoids[1] * 10))
+            return n1n2_sinusoids
 
         def _init_channel_model():
             if channel_type == 'rician':
@@ -36,7 +42,7 @@ class FadingChannel:
         self.num_sinusoids = num_sinusoids
         self.sample_rate = _init_sample_rate()
         self.k_factors = k_factors
-        self.__n1n2_sinusoids = __n1n2_sinusoids
+        self.__n1n2_sinusoids = _init_n1n2_sinusoids()
         assert max_doppler_shift < 0.1 * self.sample_rate, 'The maximum Doppler shift must be less than 1/10 ' \
                                                            'of the input signal sample rate'
         self.model = _init_channel_model()
