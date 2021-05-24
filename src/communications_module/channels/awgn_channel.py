@@ -23,6 +23,9 @@ class AWGNChannel:
         factor, noise_power, _ = get_snr_context_rescale_factor(self.x_in, n, self.rx_snr)
         y_out = factor * self.x_in
         signal_power = np.mean(abs(y_out ** 2))
+        if factor == 1:
+            print("RX Signal power: %.4f. Noise power: %.4f, SNR [dB]: %.4f" % (signal_power, noise_power, 0))
+            return y_out + n, n
         snr_db = 10 * np.log10(signal_power / noise_power)
         print("RX Signal power: %.4f. Noise power: %.4f, SNR [dB]: %.4f" % (signal_power, noise_power, snr_db))
         return y_out + n, n

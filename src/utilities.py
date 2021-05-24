@@ -80,6 +80,8 @@ def get_snr_context_rescale_factor(x_in, noise, rx_snr):
     noise_power = np.mean(abs(noise ** 2))
     req_sgn_power = sigma * noise_power
     initial_sgn_power = np.mean(abs(x_in ** 2))
+    if initial_sgn_power == 0:
+        return 1, noise_power, req_sgn_power
     factor = np.sqrt(req_sgn_power) / np.sqrt(initial_sgn_power)
     print(f'Required signal power: {req_sgn_power} [W]=[V^2]'
           f'\nInitial signal power: {initial_sgn_power} [W]=[V^2]'
