@@ -1,4 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
+from bisect import bisect_right
 from .rician_fading_channel import RicianChannel
 from .rayleigh_fading_channel import RayleighChannel
 
@@ -125,3 +127,16 @@ class FadingChannel:
         x_avg_gain_lin = 10 ** (avg_gain_db / 10)
         omega = np.sqrt(x_avg_gain_lin) / np.sqrt(z_pow)
         return omega
+
+    def plot_power_delay_profile(self):
+        t = np.arange(0, 1.2 * max(self.model.discrete_path_delays), min(self.model.discrete_path_delays)/10)
+        magnitudes = np.zeros(shape=t.shape)
+        for gain, delay in zip(self.model.avg_path_gains, self.model.discrete_path_delays):
+            idx = bisect_right(t, delay)
+            magnitudes[idx] = 10 ** (gain / 10)
+        plt.stem(t, magnitudes)
+        plt.title('Power Delay Profile')
+        plt.xlabel('Time [sec]')
+        plt.ylabel('Power')
+        return plt.gcf()
+
