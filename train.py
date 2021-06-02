@@ -86,6 +86,7 @@ def train_energy_detector(config_path, model_name, model=None):
                                   window_dim=window_dim, custom_metrics=m_metrics,
                                   learn_rate=lr_rate)
 
+    tfboard = tf.keras.callbacks.TensorBoard(log_dir='logdir', histogram_freq=0, write_graph=True, write_images=True)
     checkpoint_filepath = get_saving_model_path(configs, model_name)
     model_checkpoint_callback = ModelCheckpoint(
         filepath=checkpoint_filepath,
@@ -97,7 +98,7 @@ def train_energy_detector(config_path, model_name, model=None):
 
     model.fit(train_feeder.feed_generator(), epochs=epochs,
               validation_data=eval_feeder.feed_generator(),
-              callbacks=model_checkpoint_callback)
+              callbacks=[model_checkpoint_callback, tfboard])
 
 
 def main():

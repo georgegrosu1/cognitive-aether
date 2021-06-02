@@ -10,7 +10,7 @@ from src.utilities import scale
 class TimeSeriesFeeder:
     def __init__(self, x_features: list, y_features: list,
                  window_dim: int, feed_batch: int, stride: int = 1,
-                 min_max_scale: bool = True, pow_transform: bool = True,
+                 min_max_scale: bool = True, pow_transform: bool = False,
                  pca_transform=False, data_path: Path = None,
                  use_dataframe: pd.DataFrame = None, shuffle=False):
         self.data_path = data_path

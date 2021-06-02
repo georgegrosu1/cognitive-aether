@@ -11,6 +11,7 @@ bin-release/
 .ipynb_checkpoints
 datasets
 models_weights
+logdir
 __pycache__
 
 # Executables
