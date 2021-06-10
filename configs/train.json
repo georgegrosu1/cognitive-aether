@@ -7,6 +7,7 @@
     "batch_size": 32
   },
   "model_cfg": {
+    "window_size": 3,
     "window_size": 2,
     "input_features": ["RX_BAYES", "sigma", "RX_POW_DB"],
     "output_features": ["USER"],

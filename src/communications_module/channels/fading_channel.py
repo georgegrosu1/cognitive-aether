@@ -137,6 +137,6 @@ class FadingChannel:
         plt.stem(t, magnitudes)
         plt.title('Power Delay Profile')
         plt.xlabel('Time [sec]')
-        plt.ylabel('Power')
+        plt.ylabel('Magnitude')
         return plt.gcf()
 
