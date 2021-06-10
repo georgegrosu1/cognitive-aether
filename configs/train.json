@@ -1,6 +1,6 @@
 {
   "dataset": {
-    "path": "/datasets/v2"
+    "path": "/datasets/v6"
   },
   "train_cfg": {
     "epochs": 10,
@@ -8,7 +8,6 @@
   },
   "model_cfg": {
     "window_size": 3,
-    "window_size": 2,
     "input_features": ["RX_BAYES", "sigma", "RX_POW_DB"],
     "output_features": ["USER"],
     "lr_rate": 5e-5,
