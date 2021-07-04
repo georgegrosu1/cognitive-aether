@@ -6,7 +6,7 @@ class AbstractChannel(ABC):
     def __init__(self,
                  discrete_path_delays: list,
                  avg_path_gains: list,
-                 max_doppler_shift: int):
+                 max_doppler_shift: float):
 
         super(AbstractChannel, self).__init__()
         self.discrete_path_delays = discrete_path_delays

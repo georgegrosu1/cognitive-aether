@@ -5,11 +5,15 @@ from sympy.combinatorics.graycode import GrayCode
 class OFDMModulator:
 
     def __init__(self,
+                 fft_size: int,
                  bits_per_sym: int,
                  subcarriers: int,
                  cp_ratio_numitor: float,
                  num_pilots: int):
 
+        assert fft_size >= subcarriers, 'FFT points must be greater than active sub-carriers'
+
+        self.fft_size = fft_size
         self.subcarriers = subcarriers
         self.cp_ratio_numitor = cp_ratio_numitor
         self.num_pilots = num_pilots
@@ -17,15 +21,33 @@ class OFDMModulator:
         self.cyclic_prefix = self.subcarriers // self.cp_ratio_numitor
         self.ofdm_sym_len = self.subcarriers + self.cyclic_prefix
         self.pilot_default = 3 + 3j
-        self.subcarriers_idxs = self.get_subcarriers_idxs()
+        self.subcarriers_idxs = self.get_active_subcarriers_idxs()
         self.pilots_idxs = self.get_pilots_idxs()
         self.data_carriers_idxs = np.delete(self.subcarriers_idxs, self.pilots_idxs)
         self.payload_per_ofdm = len(self.data_carriers_idxs) * self.bits_per_sym
         # number of payload bits per OFDM symbol
         self.mapping_table = self.init_mapping_table()
 
+    def _get_active_subcarriers_nums(self):
+        if self.subcarriers == self.fft_size:
+            return self.get_subcarriers_idxs()
+
+        half_used_subc = self.subcarriers // 2
+        first_half = np.r_[1:half_used_subc + 1]
+        second_half = np.r_[-half_used_subc:0]
+
+        return np.hstack([first_half, second_half])
+
+    def get_active_subcarriers_idxs(self):
+        numbers = self._get_active_subcarriers_nums()
+        half_used = self.subcarriers // 2
+
+        indexes_proper = np.hstack(
+            [self.fft_size + numbers[half_used:], numbers[0:half_used]])
+        return indexes_proper
+
     def get_subcarriers_idxs(self):
-        return np.arange(self.subcarriers)
+        return np.fft.fftshift(np.arange(self.fft_size) - self.fft_size // 2)
 
     def get_pilots_idxs(self):
         pilots_idxs = self.subcarriers_idxs[::self.subcarriers // self.num_pilots]
@@ -80,7 +102,7 @@ class OFDMModulator:
         return mapping_table
 
     def payload_and_pilots_mapping(self, qam_payload, ioja):
-        symbol = np.zeros(self.subcarriers, dtype=complex)  # the overall K subcarriers
+        symbol = np.zeros(self.fft_size, dtype=complex)  # the overall K subcarriers
         if not bool(ioja):
             symbol[self.pilots_idxs] = self.pilot_default  # allocate the pilot subcarriers
             symbol[self.data_carriers_idxs] = qam_payload  # allocate the data subcarriers

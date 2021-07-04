@@ -53,7 +53,7 @@ def build_resid_model(input_dim, output_dim, window_dim, custom_metrics: [],
     if optimizer is not None:
         optimizer = optimizer
     else:
-        optimizer = optimizers.Adam(learning_rate=lr_schedule)
+        optimizer = optimizers.Adam(learning_rate=learn_rate)
 
     input_l = Input(shape=(window_dim, input_dim))
 

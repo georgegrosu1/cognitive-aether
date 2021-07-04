@@ -12,7 +12,7 @@ class FadingChannel:
                  channel_type: str,
                  discrete_path_delays: list,
                  avg_path_gains: list,
-                 max_doppler_shift: int,
+                 max_doppler_shift: float,
                  sample_rate: int = None,
                  num_sinusoids: int = 48,
                  k_factors: list = (),
@@ -139,4 +139,3 @@ class FadingChannel:
         plt.xlabel('Time [sec]')
         plt.ylabel('Magnitude')
         return plt.gcf()
-

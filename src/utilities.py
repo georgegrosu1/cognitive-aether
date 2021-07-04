@@ -53,7 +53,7 @@ def draw_from_distribution(mean: float = 0, sigma: float = 1, samples: int = 1):
 def get_bayes_denoised(x, noise):
     sigma_est = estimate_sigma(noise, average_sigmas=True)
     rx_bayes = denoise_wavelet(x, method='BayesShrink', mode='soft',
-                               sigma=sigma_est / (1 + sigma_est), rescale_sigma=True)
+                               sigma=2*sigma_est / (2 - sigma_est), rescale_sigma=True)
 
     return rx_bayes
 
@@ -61,7 +61,7 @@ def get_bayes_denoised(x, noise):
 def get_visu_denoised(x, noise):
     sigma_est = estimate_sigma(noise, average_sigmas=True)
     rx_visu = denoise_wavelet(x, method='VisuShrink', mode='soft',
-                              sigma=sigma_est / (1 + sigma_est * 20), rescale_sigma=True)
+                              sigma=2*sigma_est / (1 + sigma_est * 20), rescale_sigma=True)
 
     return rx_visu
 

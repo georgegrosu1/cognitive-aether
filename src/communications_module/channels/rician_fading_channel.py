@@ -7,7 +7,7 @@ class RicianChannel(AbstractChannel):
     def __init__(self,
                  discrete_path_delays: list,
                  avg_path_gains: list,
-                 max_doppler_shift: int,
+                 max_doppler_shift: float,
                  k_factors: list,
                  los_doppler_shifts: list,
                  los_init_phases: list):
