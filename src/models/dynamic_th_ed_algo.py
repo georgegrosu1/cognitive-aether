@@ -11,6 +11,5 @@ class EDDector:
         sigma = np.var(awgn_noise_vector)
         energy = np.mean(abs(pu_signal_vector)**2)
         thresh = sigma * (invqfunc(fals_proba) * np.sqrt(2 * self.sensing_window_size) + self.sensing_window_size)
-        if energy >= thresh:
-            return 1
-        return 0
+
+        return int(energy >= thresh)
