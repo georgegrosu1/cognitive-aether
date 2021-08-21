@@ -5,12 +5,12 @@ import argparse
 import tensorflow as tf
 import numpy as np
 
-from pathlib import Path
 from tensorflow_addons.metrics import F1Score
 from tensorflow.keras.metrics import Recall, Precision
 from tensorflow.keras.callbacks import ModelCheckpoint
 from src.models.deep_energy_detector import build_seq_model, build_resid_model
 from src.model_dev.data_preprocessing import TimeSeriesFeeder
+from src.utilities import get_abs_path
 
 
 def seed_everything(seed=42):
@@ -18,16 +18,6 @@ def seed_everything(seed=42):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     tf.random.set_seed(seed)
-
-
-def get_project_root() -> Path:
-    return Path(__file__).absolute()
-
-
-def get_abs_path(relative_path) -> Path:
-    root_path = get_project_root().parent
-    final_path = Path(str(root_path) + f'/{relative_path}')
-    return final_path
 
 
 def get_saving_model_path(configs, model_name: str):
@@ -107,7 +97,7 @@ def main():
 
     args_parser = argparse.ArgumentParser(description='Training script for NNs energy detection')
     args_parser.add_argument('--config_path', '-c', type=str, help='Path to model', default=r'/configs/train.json')
-    args_parser.add_argument('--model_name', '-n', type=str, help='Path to model', default=r'energy_detect_v1')
+    args_parser.add_argument('--model_name', '-n', type=str, help='Path to model', default=r'seq_ch1')
     args = args_parser.parse_args()
 
     train_energy_detector(args.config_path, args.model_name)

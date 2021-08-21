@@ -55,7 +55,7 @@ class FadingChannel:
 
     def compute_um_i(self, num_samples, re_or_im_idx, multipath_idx, waves_p_path):
         t = np.arange(0, num_samples / self.sample_rate, 1 / self.sample_rate)
-        um = np.zeros(num_samples)
+        um = np.zeros(t.shape[0])
         for n in range(waves_p_path):
             alfa = ((-1) ** (re_or_im_idx - 1)) * (np.pi / (4 * waves_p_path)) * \
                    (multipath_idx / (self.model.num_paths + 2))
