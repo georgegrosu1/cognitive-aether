@@ -1,0 +1,31 @@
+{
+  "ofdm_moodulator": {
+    "fft_size": 512,
+    "subcarriers": 128,
+    "num_pilots": 8,
+    "bits_per_sym": 6,
+    "cp_ratio": 4,
+    "num_symbols": 50,
+    "continuous": true
+  },
+  "fading_channel": {
+    "type": "rayleigh",
+    "discrete_del": [5.2e-6, 6.8e-6, 7.9e-6, 8.8e-6, 9.9e-6, 13e-6],
+    "avg_path_gains": [-11, -12, -7, -8, -9, -10],
+    "max_doppler_shift": 0.01,
+    "k_factors": [1.5]
+  },
+  "awgn_channel": {
+    "rx_snrs_list": [-15, -10, -5, 0 , 5, 10, 15]
+  },
+  "feature_engineering": {
+    "denoising": ["bayes", "visu"],
+    "extract_features": ["pow_db", "pow_logistic_map", "ca_dwt", "cd_dwt"],
+    "sliding_window_size": 50
+  },
+  "active_channels": {
+    "awgn": true,
+    "fading": true
+  },
+  "data_save_path": "/datasets/data_automata/train"
+}
