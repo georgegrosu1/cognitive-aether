@@ -1,7 +1,14 @@
 import pywt
 import numpy as np
+from pathlib import Path
 from scipy import special as sp
 from skimage.restoration import estimate_sigma, denoise_wavelet
+
+
+def get_abs_path(relative_path) -> Path:
+    root_path = Path(__file__).resolve().parent.parent
+    final_path = Path(str(root_path) + f'/{relative_path}')
+    return final_path
 
 
 def invqfunc(x):
