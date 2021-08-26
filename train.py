@@ -34,7 +34,7 @@ def get_train_val_paths(configs):
     return training_path, validation_path
 
 
-def train_energy_detector(config_path, model_name, model=None):
+def train_energy_detector(config_path, model_name, model_type, model=None):
 
     abs_cfg_path = get_abs_path(config_path)
     with open(abs_cfg_path, 'r') as cfg_file:
@@ -72,9 +72,16 @@ def train_energy_detector(config_path, model_name, model=None):
     if model is None:
         num_inputs = len(input_features)
 
-        model = build_resid_model(input_dim=num_inputs, output_dim=num_outputs,
-                                  window_dim=window_dim, custom_metrics=m_metrics,
-                                  learn_rate=lr_rate)
+        print("TIP:", model_type)
+
+        if 'residual' in model_type:
+            model = build_resid_model(input_dim=num_inputs, output_dim=num_outputs,
+                                      window_dim=window_dim, custom_metrics=m_metrics,
+                                      learn_rate=lr_rate)
+        elif 'sequential' in model_type:
+            model = build_seq_model(input_dim=num_inputs, output_dim=num_outputs,
+                                    window_dim=window_dim, custom_metrics=m_metrics,
+                                    learn_rate=lr_rate)
 
     tfboard = tf.keras.callbacks.TensorBoard(log_dir='logdir', histogram_freq=0, write_graph=True, write_images=True)
     checkpoint_filepath = get_saving_model_path(configs, model_name)
@@ -100,9 +107,11 @@ def main():
                              default=r'/configs/train.json')
     args_parser.add_argument('--model_name', '-n', type=str, help='Path to model',
                              default=r'seq_ch1')
+    args_parser.add_argument('--model_type', '-t', type=str, help='Type of NN-based ED model (sequential | residual)',
+                             default=r'sequential')
     args = args_parser.parse_args()
 
-    train_energy_detector(args.config_path, args.model_name)
+    train_energy_detector(args.config_path, args.model_name, args.model_type)
 
 
 if __name__ == '__main__':
