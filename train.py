@@ -44,7 +44,7 @@ def train_energy_detector(config_path, model_name, model=None):
     batch_size = configs['train_cfg']['batch_size']
     input_features = configs['model_cfg']['input_features']
     output_features = configs['model_cfg']['output_features']
-    num_outputs = configs['model_cfg']['num_outputs']
+    num_outputs = len(output_features)
     lr_rate = configs['model_cfg']['lr_rate']
     window_dim = configs['model_cfg']['window_size']
     epochs = configs['train_cfg']['epochs']
@@ -63,7 +63,7 @@ def train_energy_detector(config_path, model_name, model=None):
                                    feed_batch=batch_size,
                                    shuffle=False)
 
-    f1_score = F1Score(num_classes=2 ** num_outputs,
+    f1_score = F1Score(num_classes=2 ** num_outputs * (num_outputs == 1) + num_outputs * (num_outputs > 1),
                        average="micro", threshold=pos_thresh)
     recall = Recall(thresholds=pos_thresh)
     precision = Precision(thresholds=pos_thresh)
@@ -96,8 +96,10 @@ def main():
     seed_everything(seed=42)
 
     args_parser = argparse.ArgumentParser(description='Training script for NNs energy detection')
-    args_parser.add_argument('--config_path', '-c', type=str, help='Path to model', default=r'/configs/train.json')
-    args_parser.add_argument('--model_name', '-n', type=str, help='Path to model', default=r'seq_ch1')
+    args_parser.add_argument('--config_path', '-c', type=str, help='Path to config file',
+                             default=r'/configs/train.json')
+    args_parser.add_argument('--model_name', '-n', type=str, help='Path to model',
+                             default=r'seq_ch1')
     args = args_parser.parse_args()
 
     train_energy_detector(args.config_path, args.model_name)
