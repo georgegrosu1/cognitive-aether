@@ -61,9 +61,9 @@ def create_features(features_cfg, tx_signal, rx_signal, noise):
         upper_technique = feature_technique.upper()
         signal_name = f'RX_{upper_technique}'
         if 'visu' in feature_technique:
-            df[signal_name] = get_visu_denoised(df['RX_OFDM'], noise)
+            df[signal_name] = get_visu_denoised(df['RX_OFDM'], df['noise'])
         elif 'bayes' in feature_technique:
-            df[signal_name] = get_bayes_denoised(df['RX_OFDM'], noise)
+            df[signal_name] = get_bayes_denoised(df['RX_OFDM'], df['noise'])
         elif 'pow_db' in feature_technique:
             df[signal_name] = df['RX_OFDM'].rolling(rolling_window).apply(window_pow_db)
         elif 'pow_logistic_map' in feature_technique:
@@ -96,7 +96,6 @@ def generate_dataset(dataset_cfg):
         file_name = f''
         tx_signal = get_ofdm_data(configs['ofdm_moodulator'])
         qam_constel = 2**int(configs['ofdm_moodulator']['bits_per_sym'])
-        file_name += f'{qam_constel}QAM'
         rx_signal = tx_signal
         if configs['active_channels']['fading']:
             rx_signal = get_channel_faded_data(configs['fading_channel'], tx_signal)
@@ -107,11 +106,12 @@ def generate_dataset(dataset_cfg):
             fade_info = f'_{fade_type}_{fade_effect}'
             file_name += fade_info
         if configs['active_channels']['awgn']:
-            file_name += f'_{rx_snr}SNR'
+            file_name = f'{rx_snr}SNR' + file_name
             noise_model = AWGNChannel(rx_signal, rx_snr)
             rx_signal, n = noise_model.filter_x_in()
         df = create_features(configs['feature_engineering'], tx_signal, rx_signal, n)
 
+        file_name += f'_{qam_constel}Q_OFDM'
         save_dir = get_saving_dataset_path(configs)
         save_path = save_dir / f'{file_name}.csv'
 

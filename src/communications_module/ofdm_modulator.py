@@ -68,11 +68,6 @@ class OFDMModulator:
             amp += step
         return sorted(neg_amps + pos_amps)
 
-    # TODO: Remove when sure its not required anymore
-    def init_channel_response(self):
-        ch_response = np.array([0.1, 0.2+0.17j, 0.1+0.3j, 0.412+0.051j])
-        return np.fft.fft(ch_response, self.subcarriers)
-
     def serial_2_parallel(self, bits_array):
         return bits_array.reshape((len(self.data_carriers_idxs), self.bits_per_sym))
 

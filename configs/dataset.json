@@ -6,7 +6,7 @@
     "bits_per_sym": 6,
     "cp_ratio": 4,
     "num_symbols": 50,
-    "continuous": true
+    "continuous": false
   },
   "fading_channel": {
     "type": "rayleigh",
@@ -16,16 +16,16 @@
     "k_factors": [1.5]
   },
   "awgn_channel": {
-    "rx_snrs_list": [-15, -10, -5, 0 , 5, 10, 15]
+    "rx_snrs_list": [-15, -5, 0 , 5, 15]
   },
   "feature_engineering": {
     "denoising": ["bayes", "visu"],
-    "extract_features": ["pow_db", "pow_logistic_map", "ca_dwt", "cd_dwt"],
+    "extract_features": ["pow_db"],
     "sliding_window_size": 50
   },
   "active_channels": {
     "awgn": true,
     "fading": true
   },
-  "data_save_path": "/datasets/data_automata/train"
+  "data_save_path": "/datasets/acta_tehnica/test"
 }
