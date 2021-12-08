@@ -1,11 +1,11 @@
 {
   "ofdm_moodulator": {
-    "fft_size": 512,
+    "fft_size": 150,
     "subcarriers": 128,
     "num_pilots": 8,
     "bits_per_sym": 6,
     "cp_ratio": 4,
-    "num_symbols": 50,
+    "num_symbols": 8,
     "continuous": false
   },
   "fading_channel": {
@@ -16,7 +16,7 @@
     "k_factors": [1.5]
   },
   "awgn_channel": {
-    "rx_snrs_list": [-15, -5, 0 , 5, 15]
+    "rx_snrs_list": [-16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16]
   },
   "feature_engineering": {
     "denoising": ["bayes", "visu"],
@@ -27,5 +27,18 @@
     "awgn": true,
     "fading": true
   },
-  "data_save_path": "/datasets/acta_tehnica/test"
+  "superlet_scalogram": {
+    "make": true,
+    "sliding_window": 500,
+    "step": 5,
+    "gt_percent": 0.1,
+    "target_signal": "RX_VISU",
+    "foi": [1, 30000, 100],
+    "samplerate": 30.72e3,
+    "order_max": 60,
+    "order_min": 1,
+    "c_1": 5,
+    "adaptive": true
+  },
+  "data_save_path": "/datasets/superlets/full"
 }

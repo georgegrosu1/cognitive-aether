@@ -1,5 +1,7 @@
 import json
 import argparse
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -8,6 +10,7 @@ from src.utilities import pow_c_a_dwt, pow_c_d_dwt, logistic_map
 from src.communications_module import OFDMModulator
 from src.communications_module.channels import AWGNChannel, FadingChannel
 from src.utilities import get_abs_path
+from src.superlets import superlet
 
 
 def get_saving_dataset_path(configs):
@@ -38,6 +41,54 @@ def get_channel_faded_data(fading_cfg, x_in_sgn):
     y_out_faded = fading_channel.filter_x_in()
 
     return y_out_faded
+
+
+def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
+    """
+    :param df: Pandas:DataFrame based on which the superlet is computed
+    :param superlet_cfg: JSON config of superlet
+    :param dir_path: Directory path where data is saved
+    :param file_name: Name of the dataframe file
+    """
+    scalograms_dir_false = dir_path / '0'
+    scalograms_dir_true = dir_path / '1'
+    scalograms_dir_false.mkdir(parents=True, exist_ok=True)
+    scalograms_dir_true.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    plt.axis('off')
+
+    target_signal = superlet_cfg['target_signal']
+    roll_window = superlet_cfg['sliding_window']
+    roll_step = superlet_cfg['step']
+    gt_percent = superlet_cfg['gt_percent']
+    foi = np.linspace(superlet_cfg['foi'][0], superlet_cfg['foi'][1], superlet_cfg['foi'][2])
+    extent = [0, roll_window / superlet_cfg['samplerate'], foi[0], foi[-1]]
+    scales = (1 / foi) / (2 * np.pi)
+
+    start_indexes = [i for i in range(0, df.index[-1]-roll_window, roll_step)]
+    end_indexes = [i for i in range(roll_window, df.index[-1], roll_step)]
+
+    for start_idx, end_idx in zip(start_indexes, end_indexes):
+        signal = df.loc[start_idx:end_idx, target_signal]
+        spec = superlet(signal,
+                        samplerate=superlet_cfg['samplerate'],
+                        scales=scales,
+                        order_max=superlet_cfg['order_max'],
+                        order_min=superlet_cfg['order_min'],
+                        c_1=superlet_cfg['c_1'], adaptive=superlet_cfg['adaptive'])
+        ampls = np.abs(spec)
+
+        ax.imshow(ampls, cmap="inferno", aspect="auto", extent=extent, origin='lower')
+
+        img_name = file_name + f'_IDX_{start_idx}.png'
+        gt_lookback_idx = end_idx-int(gt_percent*roll_window)
+        if np.mean(df['USER'][gt_lookback_idx:end_idx]) > 0.5:
+            save_path = scalograms_dir_true / img_name
+        else:
+            save_path = scalograms_dir_false / img_name
+        fig.savefig(save_path, dpi=100)
+        fig.canvas.flush_events()
 
 
 def create_features(features_cfg, tx_signal, rx_signal, noise):
@@ -106,7 +157,7 @@ def generate_dataset(dataset_cfg):
             fade_info = f'_{fade_type}_{fade_effect}'
             file_name += fade_info
         if configs['active_channels']['awgn']:
-            file_name = f'{rx_snr}SNR' + file_name
+            file_name = f'{rx_snr}SNR_awgn' + file_name
             noise_model = AWGNChannel(rx_signal, rx_snr)
             rx_signal, n = noise_model.filter_x_in()
         df = create_features(configs['feature_engineering'], tx_signal, rx_signal, n)
@@ -114,8 +165,13 @@ def generate_dataset(dataset_cfg):
         file_name += f'_{qam_constel}Q_OFDM'
         save_dir = get_saving_dataset_path(configs)
         save_path = save_dir / f'{file_name}.csv'
-
         df.to_csv(save_path, index=False)
+
+        if configs['superlet_scalogram']['make']:
+            scalograms_dir = save_dir / 'scalograms'
+            scalograms_dir.mkdir(parents=True, exist_ok=True)
+
+            create_superlet_scalogram(df, configs['superlet_scalogram'], scalograms_dir, file_name)
 
 
 def main():
