@@ -46,6 +46,75 @@ def shannon_entropy(x):
     return -np.sum(p*np.log2(p))
 
 
+def fractal_dimension(array, max_box_size=None, min_box_size=1, n_samples=20, n_offsets=0, mask_threshold=0.1):
+    """Calculates the fractal dimension of a numpy array.
+    Args:
+        array (np.ndarray): The array to calculate the fractal dimension of.
+        max_box_size (int): The largest box size, given as the power of 2 so that
+                            2**max_box_size gives the sidelength of the largest box.
+        min_box_size (int): The smallest box size, given as the power of 2 so that
+                            2**min_box_size gives the sidelength of the smallest box.
+                            Default value 1.
+        n_samples (int): number of scales to measure over.
+        n_offsets (int): number of offsets to search over to find the smallest set N(s) to
+                       cover  all voxels>0.
+        mask_threshold (float): value between 0 and 1 to make the masl
+    """
+
+    # determine the scales to measure on
+    if len(array.shape) == 3:
+        array_gray = rgb2gray(rgba2rgb(array))
+        array = array_gray >= mask_threshold
+    if max_box_size is None:
+        # default max size is the largest power of 2 that fits in the smallest dimension of the array:
+        max_box_size = int(np.floor(np.log2(np.min(array.shape))))
+    scales = np.floor(np.logspace(max_box_size, min_box_size, num=n_samples, base=2))
+    scales = np.unique(scales)  # remove duplicates that could occur as a result of the floor
+
+    # get the locations of all non-zero pixels
+    locs = np.where(array > 0)
+    if len(locs) == 3:
+        voxels = np.array([(x, y, z) for x, y, z in zip(*locs)])
+    elif len(locs) == 2:
+        voxels = np.array([(x, y) for x, y in zip(*locs)])
+    elif len(locs) == 1:
+        voxels = np.array([x for x in zip(*locs)])
+    else:
+        raise NotImplementedError
+
+    # count the minimum amount of boxes touched
+    ns = []
+    # loop over all scales
+    for scale_val in scales:
+        touched = []
+        if n_offsets == 0:
+            offsets = np.array([0])
+        else:
+            offsets = np.linspace(0, scale_val, n_offsets)
+        # search over all offsets
+        for offset in offsets:
+            bin_edges = [np.arange(0, i, scale_val) for i in array.shape]
+            bin_edges = [np.hstack([0 - offset, x + offset]) for x in bin_edges]
+            h_1, e = np.histogramdd(voxels, bins=bin_edges)
+            touched.append(np.sum(h_1 > 0))
+        ns.append(touched)
+    ns = np.array(ns)
+
+    # From all sets N found, keep the smallest one at each scale
+    ns = np.min(ns, axis=1)
+
+    # Only keep scales at which Ns changed
+    scales = np.array([np.min(scales[ns == x]) for x in np.unique(ns)])
+
+    ns = np.unique(ns)
+    ns = ns[ns > 0]
+    scales = scales[:len(ns)]
+    # perform fit
+    coeffs = np.polyfit(np.log(1 / scales), np.log(ns), 1)
+
+    return coeffs[0]
+
+
 def lacunarity(image, box_size, mask_threshold=0.1):
     """
     Calculate the lacunarity value over an image.
@@ -63,7 +132,7 @@ def lacunarity(image, box_size, mask_threshold=0.1):
     kernel = np.ones((box_size, box_size))
     image_gray = rgb2gray(rgba2rgb(image))
     binary_img = image_gray >= mask_threshold
-    accumulator = convolve2d(binary_img, kernel, mode='valid')
+    accumulator = convolve2d(binary_img, kernel, mode='same')
     mean_sqrd = np.mean(accumulator) ** 2
     if mean_sqrd == 0:
         return 0.0
