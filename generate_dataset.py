@@ -87,7 +87,7 @@ def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
             save_path = scalograms_dir_true / img_name
         else:
             save_path = scalograms_dir_false / img_name
-        fig.savefig(save_path, dpi=100)
+        fig.savefig(save_path, dpi=100, transparent=True, bbox_inches='tight', pad_inches=0)
         fig.canvas.flush_events()
 
 

@@ -5,7 +5,7 @@
     "num_pilots": 8,
     "bits_per_sym": 6,
     "cp_ratio": 4,
-    "num_symbols": 8,
+    "num_symbols": 10,
     "continuous": false
   },
   "fading_channel": {
@@ -30,15 +30,15 @@
   "superlet_scalogram": {
     "make": true,
     "sliding_window": 500,
-    "step": 5,
-    "gt_percent": 0.1,
+    "step": 30,
+    "gt_percent": 0.33,
     "target_signal": "RX_VISU",
     "foi": [1, 30000, 100],
     "samplerate": 30.72e3,
-    "order_max": 60,
+    "order_max": 30,
     "order_min": 1,
     "c_1": 5,
     "adaptive": true
   },
-  "data_save_path": "/datasets/superlets/full"
+  "data_save_path": "/datasets/superlets/full_33percent"
 }

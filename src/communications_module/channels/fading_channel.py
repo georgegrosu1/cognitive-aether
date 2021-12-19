@@ -38,6 +38,8 @@ class FadingChannel:
                                      k_factors, los_doppler_shifts, los_init_phases)
             elif channel_type == 'rayleigh':
                 return RayleighChannel(discrete_path_delays, avg_path_gains, max_doppler_shift)
+            else:
+                raise NotImplementedError
 
         self.x_in = x_in
         assert num_sinusoids > 0, 'Number of sinusoids must be positive integer'

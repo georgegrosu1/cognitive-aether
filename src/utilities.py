@@ -2,6 +2,8 @@ import pywt
 import numpy as np
 from pathlib import Path
 from scipy import special as sp
+from scipy.signal import convolve2d
+from skimage.color import rgba2rgb, rgb2gray
 from skimage.restoration import estimate_sigma, denoise_wavelet
 
 
@@ -44,8 +46,34 @@ def shannon_entropy(x):
     return -np.sum(p*np.log2(p))
 
 
-def scale(x, out_range=(0, 1), axis=None):
-    domain = np.min(x, axis), np.max(x, axis)
+def lacunarity(image, box_size, mask_threshold=0.1):
+    """
+    Calculate the lacunarity value over an image.
+
+    The calculation is performed following these papers:
+
+    Kit, Oleksandr, and Matthias Luedeke. "Automated detection of slum area
+    change in Hyderabad, India using multitemporal satellite imagery."
+    ISPRS journal of photogrammetry and remote sensing 83 (2013): 130-137.
+
+    Kit, Oleksandr, Matthias Luedeke, and Diana Reckien. "Texture-based
+    identification of urban slums in Hyderabad, India using remote sensing
+    data." Applied Geography 32.2 (2012): 660-667.
+    """
+    kernel = np.ones((box_size, box_size))
+    image_gray = rgb2gray(rgba2rgb(image))
+    binary_img = image_gray >= mask_threshold
+    accumulator = convolve2d(binary_img, kernel, mode='valid')
+    mean_sqrd = np.mean(accumulator) ** 2
+    if mean_sqrd == 0:
+        return 0.0
+
+    return np.var(accumulator) / mean_sqrd + 1
+
+
+def scale(x, out_range=(0, 1), domain: tuple = None, axis=None):
+    if domain is None:
+        domain = np.min(x, axis), np.max(x, axis)
     y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
     return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
 
