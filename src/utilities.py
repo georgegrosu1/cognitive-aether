@@ -140,6 +140,24 @@ def lacunarity(image, box_size, mask_threshold=0.1):
     return np.var(accumulator) / mean_sqrd + 1
 
 
+def image2double(image):
+    im_info = np.finfo(image.dtype)  # Get the data type of the input image
+    return image.astype(np.float) / im_info.max  # Divide all values by the largest possible value in the datatype
+
+
+def spatial_frequency(image):
+    # convert image to gray scale if it is not already
+    if len(image.shape) == 3:
+        image = rgb2gray(rgba2rgb(image))
+
+    spatial_fft_image = np.fft.fft2(image)
+
+    # compute Spatial-Frequency
+    spatial_freq = np.mean(np.sqrt(np.abs(spatial_fft_image)))
+
+    return spatial_freq
+
+
 def scale(x, out_range=(0, 1), domain: tuple = None, axis=None):
     if domain is None:
         domain = np.min(x, axis), np.max(x, axis)
