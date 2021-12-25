@@ -150,9 +150,10 @@ def spatial_frequency(image):
     if len(image.shape) == 3:
         image = rgb2gray(rgba2rgb(image))
 
+    # compute the Spatial-Frequency based on 2D FFT of the gray image
     spatial_fft_image = np.fft.fft2(image)
 
-    # compute Spatial-Frequency
+    # and make it overall
     spatial_freq = np.mean(np.sqrt(np.abs(spatial_fft_image)))
 
     return spatial_freq
