@@ -23,7 +23,7 @@ class OFDMModulator:
         self.pilot_default = 3 + 3j
         self.subcarriers_idxs = self.get_active_subcarriers_idxs()
         self.pilots_idxs = self.get_pilots_idxs()
-        self.data_carriers_idxs = np.delete(self.subcarriers_idxs, self.pilots_idxs)
+        self.data_carriers_idxs = self.subcarriers_idxs[~np.in1d(self.subcarriers_idxs, self.pilots_idxs)]
         self.payload_per_ofdm = len(self.data_carriers_idxs) * self.bits_per_sym
         # number of payload bits per OFDM symbol
         self.mapping_table = self.init_mapping_table()
@@ -33,7 +33,7 @@ class OFDMModulator:
             return self.get_subcarriers_idxs()
 
         half_used_subc = self.subcarriers // 2
-        first_half = np.r_[1:half_used_subc + 1]
+        first_half = np.r_[1:(half_used_subc + 1)]
         second_half = np.r_[-half_used_subc:0]
 
         return np.hstack([first_half, second_half])
@@ -50,8 +50,7 @@ class OFDMModulator:
         return np.fft.fftshift(np.arange(self.fft_size) - self.fft_size // 2)
 
     def get_pilots_idxs(self):
-        pilots_idxs = self.subcarriers_idxs[::self.subcarriers // self.num_pilots]
-        pilots_idxs = np.hstack([pilots_idxs, np.array([self.subcarriers_idxs[-1]])])
+        pilots_idxs = self.subcarriers_idxs[::int(np.ceil(self.subcarriers / self.num_pilots))]
         return pilots_idxs
 
     def check_perfect_square(self):
