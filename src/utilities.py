@@ -4,6 +4,8 @@ from pathlib import Path
 from scipy import special as sp
 from scipy.signal import convolve2d
 from skimage.color import rgba2rgb, rgb2gray
+from skimage.measure import shannon_entropy
+from skimage.filters import threshold_otsu
 from skimage.restoration import estimate_sigma, denoise_wavelet
 
 
@@ -41,12 +43,17 @@ def logistic_map(x, g_rate=0.6):
     return abs(np.log2(abs(log_map)))
 
 
-def shannon_entropy(x):
+def shannon_entropy1d(x):
     p = np.histogram(x, density=True, bins='fd')[0]
     return -np.sum(p*np.log2(p))
 
 
-def fractal_dimension(array, max_box_size=None, min_box_size=1, n_samples=20, n_offsets=0, mask_threshold=0.1):
+def shannon_entropy2d(x):
+    array = rgb2gray(rgba2rgb(x))
+    return shannon_entropy(array)
+
+
+def fractal_dimension(array, max_box_size=None, min_box_size=3, n_samples=30, n_offsets=5):
     """Calculates the fractal dimension of a numpy array.
     Args:
         array (np.ndarray): The array to calculate the fractal dimension of.
@@ -58,13 +65,14 @@ def fractal_dimension(array, max_box_size=None, min_box_size=1, n_samples=20, n_
         n_samples (int): number of scales to measure over.
         n_offsets (int): number of offsets to search over to find the smallest set N(s) to
                        cover  all voxels>0.
-        mask_threshold (float): value between 0 and 1 to make the masl
     """
 
-    # determine the scales to measure on
+    # Make image to binary
     if len(array.shape) == 3:
-        array_gray = rgb2gray(rgba2rgb(array))
-        array = array_gray >= mask_threshold
+        array = rgb2gray(rgba2rgb(array))
+    mask_threshold = threshold_otsu(array)
+    array = array >= mask_threshold
+
     if max_box_size is None:
         # default max size is the largest power of 2 that fits in the smallest dimension of the array:
         max_box_size = int(np.floor(np.log2(np.min(array.shape))))
@@ -115,7 +123,7 @@ def fractal_dimension(array, max_box_size=None, min_box_size=1, n_samples=20, n_
     return coeffs[0]
 
 
-def lacunarity(image, box_size, mask_threshold=0.1):
+def lacunarity(image, box_size):
     """
     Calculate the lacunarity value over an image.
 
@@ -130,9 +138,10 @@ def lacunarity(image, box_size, mask_threshold=0.1):
     data." Applied Geography 32.2 (2012): 660-667.
     """
     kernel = np.ones((box_size, box_size))
-    image_gray = rgb2gray(rgba2rgb(image))
-    binary_img = image_gray >= mask_threshold
-    accumulator = convolve2d(binary_img, kernel, mode='same')
+    image = rgb2gray(rgba2rgb(image))
+    mask_threshold = threshold_otsu(image)
+    image = image >= mask_threshold
+    accumulator = convolve2d(image, kernel, mode='same')
     mean_sqrd = np.mean(accumulator) ** 2
     if mean_sqrd == 0:
         return 0.0
@@ -146,17 +155,27 @@ def image2double(image):
 
 
 def spatial_frequency(image):
-    # convert image to gray scale if it is not already
+    # Calculation of spatial frequency according to Li et al., 2001; Eskicioglu and Fisher, 1995.
+
+    # Make image to gray and double
     if len(image.shape) == 3:
         image = rgb2gray(rgba2rgb(image))
+    image = image2double(image)
 
-    # compute the Spatial-Frequency based on 2D FFT of the gray image
-    spatial_fft_image = np.fft.fft2(image)
+    sum_row_f, sum_col_f = 0, 0
 
-    # and make it overall
-    spatial_freq = np.mean(np.sqrt(np.abs(spatial_fft_image)))
+    # Compute sum row freq
+    for m in range(0, image.shape[0]):
+        sum_row_f += np.sum([image[m, 1:]-image[m, :-1]**2])
 
-    return spatial_freq
+    # Compute sum col freq
+    for n in range(0, image.shape[1]):
+        sum_col_f += np.sum([image[1:, n] - image[:-1, n] ** 2])
+
+    row_f = np.sqrt(sum_row_f/(image.shape[0] * image.shape[1]))
+    col_f = np.sqrt(sum_col_f / (image.shape[0] * image.shape[1]))
+
+    return np.sqrt(row_f**2 + col_f**2)
 
 
 def scale(x, out_range=(0, 1), domain: tuple = None, axis=None):
