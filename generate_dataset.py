@@ -1,4 +1,5 @@
 import json
+import uuid
 import argparse
 
 import matplotlib.pyplot as plt
@@ -26,7 +27,8 @@ def get_ofdm_data(ofdm_cfg):
                              cp_ratio_numitor=ofdm_cfg['cp_ratio'],
                              num_pilots=ofdm_cfg['num_pilots'])
     ofdm_sign = ofdm_gen.generate_ofdm_tx_signal(ofdm_cfg['num_symbols'],
-                                                 continuous_transmission=ofdm_cfg['continuous'])
+                                                 continuous_transmission=ofdm_cfg['continuous_transmit'],
+                                                 continuous_silence=ofdm_cfg['continuous_silence'])
 
     return ofdm_sign
 
@@ -58,18 +60,24 @@ def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
     fig, ax = plt.subplots(figsize=(10, 8))
     plt.axis('off')
 
+    # Prepare scalogram params
     target_signal = superlet_cfg['target_signal']
+    # NOTE: It is recommended to have the rolling windows smaller or equal to the length of a TX symbol
     roll_window = superlet_cfg['sliding_window']
     roll_step = superlet_cfg['step']
     gt_percent = superlet_cfg['gt_percent']
     foi = np.linspace(superlet_cfg['foi'][0], superlet_cfg['foi'][1], superlet_cfg['foi'][2])
     extent = [0, roll_window / superlet_cfg['samplerate'], foi[0], foi[-1]]
     scales = (1 / foi) / (2 * np.pi)
+    label_window = int(gt_percent*roll_window)
 
+    # Generate indexes for sliding window
     start_indexes = [i for i in range(0, df.index[-1]-roll_window, roll_step)]
     end_indexes = [i for i in range(roll_window, df.index[-1], roll_step)]
 
     for start_idx, end_idx in zip(start_indexes, end_indexes):
+
+        # Get the absolute values fo the Superlet coeffs and generate scalogram
         signal = df.loc[start_idx:end_idx, target_signal]
         spec = superlet(signal,
                         samplerate=superlet_cfg['samplerate'],
@@ -81,9 +89,10 @@ def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
 
         ax.imshow(ampls, cmap="inferno", aspect="auto", extent=extent, origin='lower')
 
-        img_name = file_name + f'_IDX_{start_idx}.png'
-        gt_lookback_idx = end_idx-int(gt_percent*roll_window)
-        if np.mean(df['USER'][gt_lookback_idx:end_idx]) > 0.5:
+        # Save scalogram in corresponding label directory
+        img_name = file_name + f'_IDX_{start_idx}_{uuid.uuid4()}.png'
+        gt_lookback_idx = end_idx-label_window
+        if np.mean(df['USER'][gt_lookback_idx:end_idx]) >= 1:
             save_path = scalograms_dir_true / img_name
         else:
             save_path = scalograms_dir_false / img_name

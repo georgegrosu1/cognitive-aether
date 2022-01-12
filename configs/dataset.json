@@ -6,7 +6,8 @@
     "bits_per_sym": 6,
     "cp_ratio": 4,
     "num_symbols": 10,
-    "continuous": false
+    "continuous_transmit": false,
+    "continuous_silence": true
   },
   "fading_channel": {
     "type": "rayleigh",
@@ -40,5 +41,5 @@
     "c_1": 5,
     "adaptive": true
   },
-  "data_save_path": "/datasets/superlets/full_33percent"
+  "data_save_path": "/datasets/superlets/full_binary"
 }

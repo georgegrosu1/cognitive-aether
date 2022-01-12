@@ -120,10 +120,16 @@ class OFDMModulator:
         ofdm_w_cp = self.add_cyclic_prefix(ofdm_ift_time_domain)
         return ofdm_w_cp
 
-    def generate_ofdm_tx_signal(self, ofdm_symbols: int, continuous_transmission: bool = False):
+    def generate_ofdm_tx_signal(self, ofdm_symbols: int,
+                                continuous_transmission: bool = False,
+                                continuous_silence: bool = False):
+        assert (continuous_transmission and continuous_silence) is not True, \
+            'Continuous transmission and silence can not be True at the same time'
         ofdm_tx_signal = np.array([])
         for _ in range(ofdm_symbols):
             ofdm_sym = self.generate_ofdm_symbol(continuous_transmission)
+            if continuous_silence is True:
+                ofdm_sym -= ofdm_sym
             ofdm_tx_signal = np.append(ofdm_sym, ofdm_tx_signal, axis=0)
 
         return ofdm_tx_signal
