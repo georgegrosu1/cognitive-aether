@@ -49,8 +49,11 @@ def shannon_entropy1d(x):
 
 
 def shannon_entropy2d(x):
-    array = rgb2gray(rgba2rgb(x))
-    return shannon_entropy(array)
+    if x.shape[-1] == 4:
+        x = rgb2gray(rgba2rgb(x))
+    elif x.shape[-1] == 3:
+        x = rgb2gray(x)
+    return shannon_entropy(x)
 
 
 def fractal_dimension(array, max_box_size=None, min_box_size=3, n_samples=30, n_offsets=5):
@@ -68,8 +71,10 @@ def fractal_dimension(array, max_box_size=None, min_box_size=3, n_samples=30, n_
     """
 
     # Make image to binary
-    if len(array.shape) == 3:
+    if array.shape[-1] == 4:
         array = rgb2gray(rgba2rgb(array))
+    elif array.shape[-1] == 3:
+        array = rgb2gray(array)
     mask_threshold = threshold_otsu(array)
     array = array >= mask_threshold
 
@@ -138,7 +143,10 @@ def lacunarity(image, box_size):
     data." Applied Geography 32.2 (2012): 660-667.
     """
     kernel = np.ones((box_size, box_size))
-    image = rgb2gray(rgba2rgb(image))
+    if image.shape[-1] == 4:
+        image = rgb2gray(rgba2rgb(image))
+    elif image.shape[-1] == 3:
+        image = rgb2gray(image)
     mask_threshold = threshold_otsu(image)
     image = image >= mask_threshold
     accumulator = convolve2d(image, kernel, mode='same')
@@ -156,26 +164,26 @@ def image2double(image):
 
 def spatial_frequency(image):
     # Calculation of spatial frequency according to Li et al., 2001; Eskicioglu and Fisher, 1995.
+    # Vectorized implementation
 
     # Make image to gray and double
-    if len(image.shape) == 3:
+    if image.shape[-1] == 4:
         image = rgb2gray(rgba2rgb(image))
+    elif image.shape[-1] == 3:
+        image = rgb2gray(image)
     image = image2double(image)
 
-    sum_row_f, sum_col_f = 0, 0
-
     # Compute sum row freq
-    for m in range(0, image.shape[0]):
-        sum_row_f += np.sum([image[m, 1:]-image[m, :-1]**2])
+    sum_row_f = np.sum([image[:, 1:] - image[:, :-1] ** 2])
 
     # Compute sum col freq
-    for n in range(0, image.shape[1]):
-        sum_col_f += np.sum([image[1:, n] - image[:-1, n] ** 2])
+    sum_col_f = np.sum([image[1:, :] - image[:-1, :] ** 2])
 
-    row_f = np.sqrt(sum_row_f/(image.shape[0] * image.shape[1]))
+    # Get mean square root
+    row_f = np.sqrt(sum_row_f / (image.shape[0] * image.shape[1]))
     col_f = np.sqrt(sum_col_f / (image.shape[0] * image.shape[1]))
 
-    return np.sqrt(row_f**2 + col_f**2)
+    return np.sqrt(row_f ** 2 + col_f ** 2)
 
 
 def scale(x, out_range=(0, 1), domain: tuple = None, axis=None):
