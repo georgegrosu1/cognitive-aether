@@ -6,9 +6,10 @@ import tensorflow as tf
 import numpy as np
 
 from tensorflow_addons.metrics import F1Score
-from tensorflow.keras.metrics import Recall, Precision
+from tensorflow.keras.metrics import Recall, Precision, TruePositives, TrueNegatives, FalsePositives, FalseNegatives
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint
-from src.models.deep_energy_detector import build_seq_model, build_resid_model
+from src.models.deep_energy_detector import build_seq_model, build_resid_model, build_scalogram_model
 from src.model_dev.data_preprocessing import TimeSeriesFeeder
 from src.utilities import get_abs_path
 
@@ -34,21 +35,90 @@ def get_train_val_paths(configs):
     return training_path, validation_path
 
 
-def train_energy_detector(config_path, model_name, model_type, model=None):
-
+def init_training(config_path, model_name, model_type):
     abs_cfg_path = get_abs_path(config_path)
     with open(abs_cfg_path, 'r') as cfg_file:
         configs = json.load(cfg_file)
 
-    training_path, validation_path = get_train_val_paths(configs)
-    batch_size = configs['train_cfg']['batch_size']
-    input_features = configs['model_cfg']['input_features']
-    output_features = configs['model_cfg']['output_features']
+    train_cfg = configs['train_cfg']
+    model_based_cfg = configs[model_type]
+
+    if model_type == 'timeseries':
+        train_timeseries_energy_detector(model_based_cfg, train_cfg, model_name)
+    elif model_type == 'scalograms':
+        train_scalogram_energy_detector(model_based_cfg, train_cfg, model_name)
+
+
+def train_scalogram_energy_detector(model_base_cfgs, train_cfgs, model_name, model=None):
+    # get training and valdiation data paths from config
+    training_path, validation_path = get_train_val_paths(model_base_cfgs)
+
+    # load training base parameters
+    imgs_shape = tuple(model_base_cfgs['generator_cfg']['input_shape'])
+    batch_size = train_cfgs['batch_size']
+    epochs = train_cfgs['epochs']
+    lr_rate = train_cfgs['lr_rate']
+    pos_thresh = train_cfgs['positive_threshold']
+    num_classes = len(list(training_path.glob('**/'))[1:])
+    num_outputs = int(np.log2(num_classes))
+
+    # create tf datasets from train and validation data paths
+    train_ds = ImageDataGenerator()
+    val_ds = ImageDataGenerator()
+
+    train_gen = train_ds.flow_from_directory(directory=training_path,
+                                             batch_size=batch_size,
+                                             target_size=imgs_shape[:-1],
+                                             shuffle=True)
+
+    val_gen = val_ds.flow_from_directory(directory=validation_path,
+                                         batch_size=batch_size,
+                                         target_size=imgs_shape[:-1],
+                                         shuffle=True)
+
+    # prepare classification metrics
+    f1_score = F1Score(num_classes=2 ** num_outputs * (num_outputs == 1) + num_outputs * (num_outputs > 1),
+                       average="micro", threshold=pos_thresh)
+    recall = Recall(thresholds=pos_thresh)
+    precision = Precision(thresholds=pos_thresh)
+    m_metrics = ['accuracy', f1_score, TruePositives(), TrueNegatives(), FalsePositives(), FalseNegatives()]
+
+    # prepare model
+    weights = model_base_cfgs['weights']
+    default_cnn = model_base_cfgs['default_cnn_model']
+
+    if model is None:
+        model = build_scalogram_model(imgs_shape, num_outputs, m_metrics, default_cnn, weights, learn_rate=lr_rate)
+
+    tfboard = tf.keras.callbacks.TensorBoard(log_dir='logdir', histogram_freq=0, write_graph=True, write_images=True)
+    checkpoint_filepath = get_saving_model_path(train_cfgs, model_name)
+    model_checkpoint_callback = ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        save_weights_only=False,
+        monitor=f1_score,
+        mode='max',
+        save_freq='epoch',
+        save_best_only=False)
+
+    model.fit(train_gen,
+              epochs=epochs,
+              validation_data=val_gen,
+              callbacks=[model_checkpoint_callback, tfboard])
+
+
+def train_timeseries_energy_detector(model_base_cfgs, train_cfgs, model_name, model=None):
+    training_path, validation_path = get_train_val_paths(model_base_cfgs)
+
+    batch_size = train_cfgs['batch_size']
+    epochs = train_cfgs['epochs']
+    lr_rate = train_cfgs['lr_rate']
+    pos_thresh = train_cfgs['positive_threshold']
+
+    input_features = model_base_cfgs['model_cfg']['input_features']
+    output_features = model_base_cfgs['model_cfg']['output_features']
     num_outputs = len(output_features)
-    lr_rate = configs['model_cfg']['lr_rate']
-    window_dim = configs['model_cfg']['window_size']
-    epochs = configs['train_cfg']['epochs']
-    pos_thresh = configs['model_cfg']['positive_threshold']
+
+    window_dim = model_base_cfgs['model_cfg']['window_size']
 
     train_feeder = TimeSeriesFeeder(data_path=training_path,
                                     x_features=input_features,
@@ -72,19 +142,19 @@ def train_energy_detector(config_path, model_name, model_type, model=None):
     if model is None:
         num_inputs = len(input_features)
 
-        print("TIP:", model_type)
+        print("TIP:", model_base_cfgs['model_cfg']['type'])
 
-        if 'residual' in model_type:
+        if 'residual' in model_base_cfgs['model_cfg']['type']:
             model = build_resid_model(input_dim=num_inputs, output_dim=num_outputs,
                                       window_dim=window_dim, custom_metrics=m_metrics,
                                       learn_rate=lr_rate)
-        elif 'sequential' in model_type:
+        elif 'sequential' in model_base_cfgs['model_cfg']['type']:
             model = build_seq_model(input_dim=num_inputs, output_dim=num_outputs,
                                     window_dim=window_dim, custom_metrics=m_metrics,
                                     learn_rate=lr_rate)
 
     tfboard = tf.keras.callbacks.TensorBoard(log_dir='logdir', histogram_freq=0, write_graph=True, write_images=True)
-    checkpoint_filepath = get_saving_model_path(configs, model_name)
+    checkpoint_filepath = get_saving_model_path(train_cfgs, model_name)
     model_checkpoint_callback = ModelCheckpoint(
         filepath=checkpoint_filepath,
         save_weights_only=False,
@@ -106,12 +176,12 @@ def main():
     args_parser.add_argument('--config_path', '-c', type=str, help='Path to config file',
                              default=r'/configs/train.json')
     args_parser.add_argument('--model_name', '-n', type=str, help='Path to model',
-                             default=r'seq_ch1')
-    args_parser.add_argument('--model_type', '-t', type=str, help='Type of NN-based ED model (sequential | residual)',
-                             default=r'sequential')
+                             default=r'SLT_2')
+    args_parser.add_argument('--model_type', '-t', type=str, help='Type of NN-based ED model (timeseries | scalograms)',
+                             default=r'scalograms')
     args = args_parser.parse_args()
 
-    train_energy_detector(args.config_path, args.model_name, args.model_type)
+    init_training(args.config_path, args.model_name, args.model_type)
 
 
 if __name__ == '__main__':

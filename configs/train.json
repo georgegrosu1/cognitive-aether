@@ -1,17 +1,36 @@
 {
-  "dataset": {
-    "path": "/datasets/final/ch_i"
+  "timeseries": {
+      "dataset": {
+        "path": "/datasets/final/ch_i"
+      },
+      "model_cfg": {
+        "type": "sequential",
+        "window_size": 3,
+        "input_features": [
+          "RX_VISU",
+          "sigma",
+          "RX_POW_DB"
+        ],
+        "output_features": [
+          "USER"
+        ]
+      }
+  },
+  "scalograms": {
+    "dataset": {
+      "path": "/datasets/superlets/full_binary"
+    },
+    "generator_cfg": {
+      "input_shape": [128, 128, 3]
+    },
+    "default_cnn_model": "custom",
+    "weights": "imagenet"
   },
   "train_cfg": {
-    "epochs": 10,
-    "batch_size": 32
-  },
-  "model_cfg": {
-    "window_size": 3,
-    "input_features": ["RX_BAYES", "sigma", "RX_POW_DB"],
-    "output_features": ["USER"],
-    "lr_rate": 5e-5,
-    "positive_threshold": 0.65
-  },
-  "save_path": "/models_weights"
+    "epochs": 20,
+    "batch_size": 32,
+    "lr_rate": 3e-3,
+    "positive_threshold": 0.65,
+    "save_path": "/models_weights"
+  }
 }

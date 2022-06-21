@@ -3,7 +3,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras import optimizers
 from tensorflow.keras.losses import binary_crossentropy
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
-from tensorflow.keras.layers import Input, Conv1D, LSTM, Dense, Dropout, MaxPooling1D, BatchNormalization, Add
+from tensorflow.keras.applications import MobileNetV2, EfficientNetB0, InceptionV3
+from tensorflow.keras.layers import Input, Conv1D, Conv2D, LSTM, Dense, Dropout, \
+    MaxPooling1D, MaxPool2D, BatchNormalization, Add, Flatten
 
 
 def build_seq_model(input_dim, output_dim, window_dim, custom_metrics: [],
@@ -78,3 +80,40 @@ def build_resid_model(input_dim, output_dim, window_dim, custom_metrics: [],
     model.compile(loss=loss, metrics=custom_metrics, optimizer=optimizer)
 
     return model
+
+
+def build_scalogram_model(input_shape, output_dim, custom_metrics: [], default_cnn, pretrained_weights,
+                          loss=binary_crossentropy, learn_rate=1e-5, optimizer=None):
+
+    lr_schedule = ExponentialDecay(initial_learning_rate=learn_rate,
+                                   decay_steps=1e6,
+                                   decay_rate=3e-5)
+    if optimizer is not None:
+        optimizer = optimizer
+    else:
+        optimizer = optimizers.Adam(learning_rate=lr_schedule)
+
+    if 'mobilenet_v2' == default_cnn:
+        model = MobileNetV2(weights=pretrained_weights, input_shape=input_shape, include_top=False)
+    elif 'efficientnet' == default_cnn:
+        model = EfficientNetB0(weights=pretrained_weights, input_shape=input_shape, include_top=False)
+    elif 'inception_v3' == default_cnn:
+        model = InceptionV3(weights=pretrained_weights, input_shape=input_shape, include_top=False)
+    elif 'custom' == default_cnn:
+        model = Sequential()
+        model.add(Input(shape=input_shape))
+        model.add(BatchNormalization())
+        model.add(Conv2D(filters=1, kernel_size=(8, 8), padding='same', activation='relu'))
+        model.add(MaxPool2D(pool_size=(3, 3), padding='same'))
+        model.add(BatchNormalization())
+    else:
+        raise NotImplementedError
+
+    flatten_l = Flatten()(model.output)
+    drop_1 = Dropout(0.8)(flatten_l)
+    output_l = Dense(output_dim, 'softmax')(drop_1)
+    final_model = Model(inputs=model.inputs, outputs=output_l)
+
+    final_model.compile(loss=loss, metrics=custom_metrics, optimizer=optimizer)
+
+    return final_model
