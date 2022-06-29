@@ -18,8 +18,8 @@ class OFDMModulator:
         self.cp_ratio_numitor = cp_ratio_numitor
         self.num_pilots = num_pilots
         self.bits_per_sym = bits_per_sym
-        self.cyclic_prefix = self.subcarriers // self.cp_ratio_numitor
-        self.ofdm_sym_len = self.subcarriers + self.cyclic_prefix
+        self.cyclic_prefix = self.fft_size // self.cp_ratio_numitor
+        self.ofdm_sym_len = self.fft_size + self.cyclic_prefix
         self.pilot_default = 3 + 3j
         self.subcarriers_idxs = self.get_active_subcarriers_idxs()
         self.pilots_idxs = self.get_pilots_idxs()

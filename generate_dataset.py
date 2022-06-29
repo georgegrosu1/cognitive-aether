@@ -1,5 +1,6 @@
 import json
 import uuid
+import tqdm
 import argparse
 
 import matplotlib.pyplot as plt
@@ -69,10 +70,10 @@ def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
     foi = np.linspace(superlet_cfg['foi'][0], superlet_cfg['foi'][1], superlet_cfg['foi'][2])
     extent = [0, roll_window / superlet_cfg['samplerate'], foi[0], foi[-1]]
     scales = (1 / foi) / (2 * np.pi)
-    label_window = int(gt_percent*roll_window)
+    label_window = int(gt_percent * roll_window)
 
     # Generate indexes for sliding window
-    start_indexes = [i for i in range(0, df.index[-1]-roll_window, roll_step)]
+    start_indexes = [i for i in range(0, df.index[-1] - roll_window, roll_step)]
     end_indexes = [i for i in range(roll_window, df.index[-1], roll_step)]
 
     for start_idx, end_idx in zip(start_indexes, end_indexes):
@@ -91,7 +92,7 @@ def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
 
         # Save scalogram in corresponding label directory
         img_name = file_name + f'_IDX_{start_idx}_{uuid.uuid4()}.png'
-        gt_lookback_idx = end_idx-label_window
+        gt_lookback_idx = end_idx - label_window
         if np.mean(df['USER'][gt_lookback_idx:end_idx]) >= 1:
             save_path = scalograms_dir_true / img_name
         else:
@@ -100,24 +101,45 @@ def create_superlet_scalogram(df, superlet_cfg, dir_path, file_name):
         fig.canvas.flush_events()
 
 
-def create_features(features_cfg, tx_signal, rx_signal, noise):
+def create_features(configs, rx_snr):
     df = pd.DataFrame()
-    if features_cfg['denoising']:
-        assert noise is not None, "Noise can not be none when applying denoising techniques." \
-                                  "Please activate noise channel"
-
-    # Create baseline features
-    rolling_window = features_cfg['sliding_window_size']
-    if noise is not None:
-        df['noise'] = abs(noise)
-        df['sigma'] = df['noise'].rolling(rolling_window).apply(np.var)
+    # Init default noise
+    if configs['feature_engineering']['denoising']:
+        assert configs['active_channels']['awgn'], "Noise can not be none when applying denoising techniques." \
+                                                   "Please activate noise channel"
+    # Generate TX signal first
+    tx_signal = get_ofdm_data(configs['ofdm_moodulator'])
     df['TX_OFDM'] = abs(tx_signal)
+
+    # Init RX signal with TX signal and get rolling window size
+    rx_signal = tx_signal
+    rolling_window = configs['feature_engineering']['sliding_window_size']
+
+    # Apply fading channel if set
+    if configs['active_channels']['fading']:
+        rx_signal = get_channel_faded_data(configs['fading_channel'], tx_signal)
+
+    # Apply AWGN channel if set
+    if configs['active_channels']['awgn']:
+        noise_model = AWGNChannel(rx_signal, rx_snr)
+        rx_signal, noise = noise_model.filter_x_in()
+        df['noise'] = abs(noise)
+        if rolling_window > 0:
+            df['sigma'] = df['noise'].rolling(rolling_window).apply(np.var)
+        # Scale the TX signal for given SNR & add it to df
+        noise_model.x_in = tx_signal
+        factor, _, _ = noise_model.get_rescale_factor_noise_pow_req_sgn_pow()
+        tx_snr_rescaled = factor * tx_signal
+        df['TX_OFDM_SCALED'] = abs(tx_snr_rescaled)
+        df['TX_OFDM_NOISY_SNR_RESCALED'] = abs(tx_snr_rescaled + noise)
+
     df['RX_OFDM'] = abs(rx_signal)
     df['RE_RX_OFDM'] = rx_signal.real
     df['IM_RX_OFDM'] = rx_signal.imag
 
     # Create denoised signals & extra features
-    for feature_technique in features_cfg['denoising'] + features_cfg['extract_features']:
+    features_list = configs['feature_engineering']['denoising'] + configs['feature_engineering']['extract_features']
+    for feature_technique in features_list:
         upper_technique = feature_technique.upper()
         signal_name = f'RX_{upper_technique}'
         if 'visu' in feature_technique:
@@ -134,8 +156,9 @@ def create_features(features_cfg, tx_signal, rx_signal, noise):
             df[signal_name] = df['RX_OFDM'].rolling(rolling_window).apply(pow_c_d_dwt)
 
     # Remove possible residual NaNs from end of dataframe
-    last_nan = np.where(np.asanyarray(np.isnan(df)))[0][-1]
-    df = df.loc[(last_nan + 1):, :]
+    # if df.isnull().values.any():
+    #     last_nan = np.where(np.asanyarray(np.isnan(df)))[0][-1]
+    #     df = df.loc[(last_nan + 1):, :]
 
     # Generate Ground Truth based on TX signal
     ones = df['TX_OFDM'] > 0
@@ -146,30 +169,35 @@ def create_features(features_cfg, tx_signal, rx_signal, noise):
 
 
 def generate_dataset(dataset_cfg):
-
     abs_cfg_path = get_abs_path(dataset_cfg)
     with open(abs_cfg_path, 'r') as cfg_file:
         configs = json.load(cfg_file)
 
-    n = None
-    for rx_snr in configs['awgn_channel']['rx_snrs_list']:
+    # Add disposable OFDM symbols based on rolling window size relative to size of OFDM symbol
+    win_size = configs['feature_engineering']['sliding_window_size']
+    len_cyclic_prefix = configs['ofdm_moodulator']['fft_size'] // configs['ofdm_moodulator']['cp_ratio']
+    ofdm_symbol_size = configs['ofdm_moodulator']['fft_size'] + len_cyclic_prefix
+    disposable_symbols = int(np.ceil(win_size / ofdm_symbol_size))
+    configs['ofdm_moodulator']["num_symbols"] += disposable_symbols
+
+    for rx_snr in tqdm.tqdm(configs['awgn_channel']['rx_snrs_list']):
+        # Instantiate name of the file
         file_name = f''
-        tx_signal = get_ofdm_data(configs['ofdm_moodulator'])
-        qam_constel = 2**int(configs['ofdm_moodulator']['bits_per_sym'])
-        rx_signal = tx_signal
+        qam_constel = 2 ** int(configs['ofdm_moodulator']['bits_per_sym'])
         if configs['active_channels']['fading']:
-            rx_signal = get_channel_faded_data(configs['fading_channel'], tx_signal)
-            fade_effect = 'flat'
             fade_type = configs['fading_channel']['type']
             if len(configs['fading_channel']['avg_path_gains']) > 1:
                 fade_effect = 'fselective'
+            else:
+                fade_effect = 'flat'
             fade_info = f'_{fade_type}_{fade_effect}'
             file_name += fade_info
         if configs['active_channels']['awgn']:
             file_name = f'{rx_snr}SNR_awgn' + file_name
-            noise_model = AWGNChannel(rx_signal, rx_snr)
-            rx_signal, n = noise_model.filter_x_in()
-        df = create_features(configs['feature_engineering'], tx_signal, rx_signal, n)
+        df = create_features(configs, rx_snr)
+
+        # Remove the disposable symbols and leave the number specified in configs
+        df = df.loc[(ofdm_symbol_size * disposable_symbols):, :]
 
         file_name += f'_{qam_constel}Q_OFDM'
         save_dir = get_saving_dataset_path(configs)
@@ -184,7 +212,6 @@ def generate_dataset(dataset_cfg):
 
 
 def main():
-
     args_parser = argparse.ArgumentParser(description='Dataset synthesizer script')
     args_parser.add_argument('--dataset_config', '-d', type=str, help='Path to dataset configs',
                              default=r'/configs/dataset.json')
