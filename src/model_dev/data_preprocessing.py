@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -21,9 +22,9 @@ class TimeSeriesFeeder(tf.keras.preprocessing.sequence.TimeseriesGenerator):
                  stride: int = 1,
                  min_max_scale: bool = True,
                  pow_transform: bool = False,
-                 pca_transform=False,
-                 shuffle=False,
-                 reverse=False):
+                 pca_transform: bool = False,
+                 shuffle: bool = False,
+                 reverse: bool = False):
         self.data_source = data_source
         self.exogenous_features = x_features
         self.endogenous_features = y_features
@@ -71,9 +72,9 @@ class TimeSeriesFeeder(tf.keras.preprocessing.sequence.TimeseriesGenerator):
         if type(self.data_source) is not pd.DataFrame:
             df = self.get_data_from_path()
         else:
-            df = self.data_source
+            df = copy.copy(self.data_source)
         if self.min_max_scale:
-            df.loc[:, self.exogenous_features] = df.loc[:, self.exogenous_features].apply(scale, axis=0)
+            df.loc[:, self.exogenous_features] = df.loc[:, self.exogenous_features].apply(scale)
         if self.pow_transform:
             df.loc[:, self.exogenous_features] = self.apply_pow_transform(df.loc[:, self.exogenous_features])
         if self.pca_transform:
