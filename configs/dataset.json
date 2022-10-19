@@ -1,13 +1,13 @@
 {
   "ofdm_moodulator": {
-    "fft_size": 150,
+    "fft_size": 256,
     "subcarriers": 128,
-    "num_pilots": 8,
+    "num_pilots": 16,
     "bits_per_sym": 6,
     "cp_ratio": 4,
     "num_symbols": 10,
     "continuous_transmit": false,
-    "continuous_silence": true
+    "continuous_silence": false
   },
   "fading_channel": {
     "type": "rayleigh",
@@ -17,7 +17,7 @@
     "k_factors": [1.5]
   },
   "awgn_channel": {
-    "rx_snrs_list": [-16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16]
+    "rx_snrs_list": [0, 2, 4, 6, 8, 10, 12, 14, 16]
   },
   "feature_engineering": {
     "denoising": ["bayes", "visu"],
@@ -29,7 +29,7 @@
     "fading": true
   },
   "superlet_scalogram": {
-    "make": true,
+    "make": false,
     "sliding_window": 500,
     "step": 30,
     "gt_percent": 0.33,
@@ -41,5 +41,5 @@
     "c_1": 5,
     "adaptive": true
   },
-  "data_save_path": "/datasets/superlets/full_binary"
+  "data_save_path": "/datasets/randomsampling/test"
 }

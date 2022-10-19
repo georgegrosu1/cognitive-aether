@@ -107,8 +107,13 @@ def create_features(configs, rx_snr):
     if configs['feature_engineering']['denoising']:
         assert configs['active_channels']['awgn'], "Noise can not be none when applying denoising techniques." \
                                                    "Please activate noise channel"
+    disposable_symbols = compute_required_disposable_symbols(configs)
+    configs['ofdm_moodulator']["num_symbols"] += disposable_symbols
+
     # Generate TX signal first
     tx_signal = get_ofdm_data(configs['ofdm_moodulator'])
+    df['RE_TX_OFDM'] = tx_signal.real
+    df['IM_TX_OFDM'] = tx_signal.imag
     df['TX_OFDM'] = abs(tx_signal)
 
     # Init RX signal with TX signal and get rolling window size
@@ -123,15 +128,11 @@ def create_features(configs, rx_snr):
     if configs['active_channels']['awgn']:
         noise_model = AWGNChannel(rx_signal, rx_snr)
         rx_signal, noise = noise_model.filter_x_in()
-        df['noise'] = abs(noise)
+        df['RE_NOISE'] = noise.real
+        df['IM_NOISE'] = noise.imag
+        df['NOISE'] = abs(noise)
         if rolling_window > 0:
-            df['sigma'] = df['noise'].rolling(rolling_window).apply(np.var)
-        # Scale the TX signal for given SNR & add it to df
-        noise_model.x_in = tx_signal
-        factor, _, _ = noise_model.get_rescale_factor_noise_pow_req_sgn_pow()
-        tx_snr_rescaled = factor * tx_signal
-        df['TX_OFDM_SCALED'] = abs(tx_snr_rescaled)
-        df['TX_OFDM_NOISY_SNR_RESCALED'] = abs(tx_snr_rescaled + noise)
+            df['sigma'] = df['NOISE'].rolling(rolling_window).apply(np.var)
 
     df['RX_OFDM'] = abs(rx_signal)
     df['RE_RX_OFDM'] = rx_signal.real
@@ -143,9 +144,9 @@ def create_features(configs, rx_snr):
         upper_technique = feature_technique.upper()
         signal_name = f'RX_{upper_technique}'
         if 'visu' in feature_technique:
-            df[signal_name] = get_visu_denoised(df['RX_OFDM'], df['noise'])
+            df[signal_name] = get_visu_denoised(df['RX_OFDM'], df['NOISE'])
         elif 'bayes' in feature_technique:
-            df[signal_name] = get_bayes_denoised(df['RX_OFDM'], df['noise'])
+            df[signal_name] = get_bayes_denoised(df['RX_OFDM'], df['NOISE'])
         elif 'pow_db' in feature_technique:
             df[signal_name] = df['RX_OFDM'].rolling(rolling_window).apply(window_pow_db)
         elif 'pow_logistic_map' in feature_technique:
@@ -155,30 +156,35 @@ def create_features(configs, rx_snr):
         elif 'cd_dwt' in feature_technique:
             df[signal_name] = df['RX_OFDM'].rolling(rolling_window).apply(pow_c_d_dwt)
 
-    # Remove possible residual NaNs from end of dataframe
-    # if df.isnull().values.any():
-    #     last_nan = np.where(np.asanyarray(np.isnan(df)))[0][-1]
-    #     df = df.loc[(last_nan + 1):, :]
-
     # Generate Ground Truth based on TX signal
     ones = df['TX_OFDM'] > 0
     df.loc[ones, 'USER'] = 1
     df.loc[~ones, 'USER'] = 0
 
+    # Remove the disposable symbols and leave the number specified in configs
+    df = df.loc[(configs['ofdm_moodulator']['fft_size'] +
+                 configs['ofdm_moodulator']['fft_size'] // configs['ofdm_moodulator']['cp_ratio'] *
+                 disposable_symbols):, :]
+
+    configs['ofdm_moodulator']["num_symbols"] -= disposable_symbols
+
     return df
+
+
+def compute_required_disposable_symbols(configs):
+    # Add disposable OFDM symbols based on rolling window size relative to size of OFDM symbol
+    win_size = configs['feature_engineering']['sliding_window_size']
+    len_cyclic_prefix = configs['ofdm_moodulator']['fft_size'] // configs['ofdm_moodulator']['cp_ratio']
+    ofdm_symbol_size = configs['ofdm_moodulator']['fft_size'] + len_cyclic_prefix
+    disposable_symbols = int(np.ceil(win_size / ofdm_symbol_size))
+
+    return disposable_symbols
 
 
 def generate_dataset(dataset_cfg):
     abs_cfg_path = get_abs_path(dataset_cfg)
     with open(abs_cfg_path, 'r') as cfg_file:
         configs = json.load(cfg_file)
-
-    # Add disposable OFDM symbols based on rolling window size relative to size of OFDM symbol
-    win_size = configs['feature_engineering']['sliding_window_size']
-    len_cyclic_prefix = configs['ofdm_moodulator']['fft_size'] // configs['ofdm_moodulator']['cp_ratio']
-    ofdm_symbol_size = configs['ofdm_moodulator']['fft_size'] + len_cyclic_prefix
-    disposable_symbols = int(np.ceil(win_size / ofdm_symbol_size))
-    configs['ofdm_moodulator']["num_symbols"] += disposable_symbols
 
     for rx_snr in tqdm.tqdm(configs['awgn_channel']['rx_snrs_list']):
         # Instantiate name of the file
@@ -195,9 +201,6 @@ def generate_dataset(dataset_cfg):
         if configs['active_channels']['awgn']:
             file_name = f'{rx_snr}SNR_awgn' + file_name
         df = create_features(configs, rx_snr)
-
-        # Remove the disposable symbols and leave the number specified in configs
-        df = df.loc[(ofdm_symbol_size * disposable_symbols):, :]
 
         file_name += f'_{qam_constel}Q_OFDM'
         save_dir = get_saving_dataset_path(configs)
