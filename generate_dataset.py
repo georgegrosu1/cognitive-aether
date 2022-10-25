@@ -108,10 +108,10 @@ def create_features(configs, rx_snr):
         assert configs['active_channels']['awgn'], "Noise can not be none when applying denoising techniques." \
                                                    "Please activate noise channel"
     disposable_symbols = compute_required_disposable_symbols(configs)
-    configs['ofdm_moodulator']["num_symbols"] += disposable_symbols
+    configs['ofdm_modulator']["num_symbols"] += disposable_symbols
 
     # Generate TX signal first
-    tx_signal = get_ofdm_data(configs['ofdm_moodulator'])
+    tx_signal = get_ofdm_data(configs['ofdm_modulator'])
     df['RE_TX_OFDM'] = tx_signal.real
     df['IM_TX_OFDM'] = tx_signal.imag
     df['TX_OFDM'] = abs(tx_signal)
@@ -162,11 +162,11 @@ def create_features(configs, rx_snr):
     df.loc[~ones, 'USER'] = 0
 
     # Remove the disposable symbols and leave the number specified in configs
-    df = df.loc[(configs['ofdm_moodulator']['fft_size'] +
-                 configs['ofdm_moodulator']['fft_size'] // configs['ofdm_moodulator']['cp_ratio'] *
+    df = df.loc[(configs['ofdm_modulator']['fft_size'] +
+                 configs['ofdm_modulator']['fft_size'] // configs['ofdm_modulator']['cp_ratio'] *
                  disposable_symbols):, :]
 
-    configs['ofdm_moodulator']["num_symbols"] -= disposable_symbols
+    configs['ofdm_modulator']["num_symbols"] -= disposable_symbols
 
     return df
 
@@ -174,8 +174,8 @@ def create_features(configs, rx_snr):
 def compute_required_disposable_symbols(configs):
     # Add disposable OFDM symbols based on rolling window size relative to size of OFDM symbol
     win_size = configs['feature_engineering']['sliding_window_size']
-    len_cyclic_prefix = configs['ofdm_moodulator']['fft_size'] // configs['ofdm_moodulator']['cp_ratio']
-    ofdm_symbol_size = configs['ofdm_moodulator']['fft_size'] + len_cyclic_prefix
+    len_cyclic_prefix = configs['ofdm_modulator']['fft_size'] // configs['ofdm_modulator']['cp_ratio']
+    ofdm_symbol_size = configs['ofdm_modulator']['fft_size'] + len_cyclic_prefix
     disposable_symbols = int(np.ceil(win_size / ofdm_symbol_size))
 
     return disposable_symbols
@@ -189,7 +189,7 @@ def generate_dataset(dataset_cfg):
     for rx_snr in tqdm.tqdm(configs['awgn_channel']['rx_snrs_list']):
         # Instantiate name of the file
         file_name = f''
-        qam_constel = 2 ** int(configs['ofdm_moodulator']['bits_per_sym'])
+        qam_constel = 2 ** int(configs['ofdm_modulator']['bits_per_sym'])
         if configs['active_channels']['fading']:
             fade_type = configs['fading_channel']['type']
             if len(configs['fading_channel']['avg_path_gains']) > 1:

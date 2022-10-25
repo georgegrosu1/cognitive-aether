@@ -1,4 +1,5 @@
 import copy
+import warnings
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -68,9 +69,14 @@ class TimeSeriesFeeder(tf.keras.preprocessing.sequence.TimeseriesGenerator):
 
     def _fetch_data_targets(self):
         assert (type(self.data_source) is pathlib.WindowsPath) | (type(self.data_source) is pathlib.Path) | \
-               (type(self.data_source) is pd.DataFrame), "Provide a dataframe or data path"
-        if type(self.data_source) is not pd.DataFrame:
+               (type(self.data_source) is pd.DataFrame) | (type(self.data_source) is np.ndarray), \
+            "Provide a dataframe or data path"
+        if type(self.data_source) is pd.DataFrame:
             df = self.get_data_from_path()
+        elif type(self.data_source) is np.ndarray:
+            warnings.warn("Data source is ndarray. MAKE SURE YOUR ARRAYS MATCH THE ORDER OF THE FEATURES")
+            df = pd.DataFrame(data=self.data_source, columns=np.concatenate([self.exogenous_features,
+                                                                             self.endogenous_features]))
         else:
             df = copy.copy(self.data_source)
         if self.min_max_scale:

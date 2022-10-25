@@ -1,5 +1,5 @@
 {
-  "ofdm_moodulator": {
+  "ofdm_modulator": {
     "fft_size": 256,
     "subcarriers": 128,
     "num_pilots": 16,
@@ -20,7 +20,7 @@
     "rx_snrs_list": [0, 2, 4, 6, 8, 10, 12, 14, 16]
   },
   "feature_engineering": {
-    "denoising": ["bayes", "visu"],
+    "denoising": [],
     "extract_features": ["pow_db"],
     "sliding_window_size": 50
   },
