@@ -9,7 +9,7 @@ import pandas as pd
 
 from src.utilities import window_pow_db, get_bayes_denoised, get_visu_denoised
 from src.utilities import pow_c_a_dwt, pow_c_d_dwt, logistic_map
-from src.communications_module import OFDMModulator
+from src.communications_module import OFDMModulator, RandomSampling
 from src.communications_module.channels import AWGNChannel, FadingChannel
 from src.utilities import get_abs_path
 from src.superlets import superlet
@@ -167,6 +167,10 @@ def create_features(configs, rx_snr):
                  disposable_symbols):, :]
 
     configs['ofdm_modulator']["num_symbols"] -= disposable_symbols
+
+    # if use_rand_sampling:
+    #     rand_sample = RandomSampling(decimation=decimation_val, sampling_type=samp_type)
+    #     rand_samp_idxs = rand_sample.get_sampling_idxs(rx_signal)
 
     return df
 
