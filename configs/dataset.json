@@ -1,13 +1,18 @@
 {
   "ofdm_modulator": {
-    "fft_size": 256,
-    "subcarriers": 128,
+    "fft_size": 128,
+    "subcarriers": 96,
     "num_pilots": 16,
     "bits_per_sym": 6,
     "cp_ratio": 4,
-    "num_symbols": 10,
+    "num_symbols": 4000,
     "continuous_transmit": false,
     "continuous_silence": false
+  },
+  "rand_sampler": {
+    "use": true,
+    "decimation": 128,
+    "sampling_type": "jrs_uniform"
   },
   "fading_channel": {
     "type": "rayleigh",
@@ -17,12 +22,12 @@
     "k_factors": [1.5]
   },
   "awgn_channel": {
-    "rx_snrs_list": [0, 2, 4, 6, 8, 10, 12, 14, 16]
+    "rx_snrs_list": [-14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14]
   },
   "feature_engineering": {
     "denoising": [],
     "extract_features": ["pow_db"],
-    "sliding_window_size": 50
+    "sliding_window_size": 80
   },
   "active_channels": {
     "awgn": true,
@@ -41,5 +46,5 @@
     "c_1": 5,
     "adaptive": true
   },
-  "data_save_path": "/datasets/randomsampling/test"
+  "data_save_path": "/datasets/randomsampling/train"
 }

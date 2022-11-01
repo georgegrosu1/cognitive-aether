@@ -167,10 +167,13 @@ def create_features(configs, rx_snr):
                  disposable_symbols):, :]
 
     configs['ofdm_modulator']["num_symbols"] -= disposable_symbols
+    df.reset_index(drop=True, inplace=True)
 
-    # if use_rand_sampling:
-    #     rand_sample = RandomSampling(decimation=decimation_val, sampling_type=samp_type)
-    #     rand_samp_idxs = rand_sample.get_sampling_idxs(rx_signal)
+    if configs['rand_sampler']['use']:
+        rand_sample = RandomSampling(decimation=configs['rand_sampler']['decimation'],
+                                     sampling_type=configs['rand_sampler']['sampling_type'])
+        rand_samp_idxs = rand_sample.get_sampling_idxs(df.shape[0])
+        return df.loc[rand_samp_idxs, :]
 
     return df
 

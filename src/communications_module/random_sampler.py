@@ -50,8 +50,8 @@ class RandomSampling:
                 sampling_idxs = sampling_idxs.round()
                 return sampling_idxs.astype(int)
 
-    def get_sampling_idxs(self, signal: np.ndarray):
+    def get_sampling_idxs(self, signal_length: int):
         if 'jrs' in self.sampling_type:
-            return self.jrs_random_sampling(signal.shape[0])
+            return self.jrs_random_sampling(signal_length)
         else:
-            return self.ars_random_sampling(signal.shape[0])
+            return self.ars_random_sampling(signal_length)
