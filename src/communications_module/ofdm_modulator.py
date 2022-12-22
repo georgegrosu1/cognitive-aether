@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Union
 from sympy.combinatorics.graycode import GrayCode
 
 
@@ -7,14 +8,17 @@ class OFDMModulator:
     def __init__(self,
                  fft_size: int,
                  bits_per_sym: int,
-                 subcarriers: int,
+                 subcarriers: Union[int, list, np.ndarray],
                  cp_ratio_numitor: float,
                  num_pilots: int):
 
-        assert fft_size >= subcarriers, 'FFT points must be greater than active sub-carriers'
-
         self.fft_size = fft_size
-        self.subcarriers = subcarriers
+        if (type(subcarriers) is list) | (type(subcarriers) is np.ndarray):
+            self.subcarriers = np.array(subcarriers)
+            assert fft_size >= self.subcarriers.shape[-1], 'FFT points must be greater than active sub-carriers'
+        else:
+            self.subcarriers = subcarriers
+            assert fft_size >= self.subcarriers, 'FFT points must be greater than active sub-carriers'
         self.cp_ratio_numitor = cp_ratio_numitor
         self.num_pilots = num_pilots
         self.bits_per_sym = bits_per_sym
@@ -29,29 +33,40 @@ class OFDMModulator:
         self.mapping_table = self.init_mapping_table()
 
     def _get_active_subcarriers_nums(self):
-        if self.subcarriers == self.fft_size:
-            return self.get_subcarriers_idxs()
+        assert (type(self.subcarriers) is int) | (type(self.subcarriers) is np.ndarray), \
+            "Provide number of active subcarriers or a numpy array of selection between [-NFFT/2, 0), (0, NFFT/2]"
+        if type(self.subcarriers) == int:
+            if self.subcarriers == self.fft_size:
+                return self.get_subcarriers_idxs()
 
-        half_used_subc = self.subcarriers // 2
-        first_half = np.r_[1:(half_used_subc + 1)]
-        second_half = np.r_[-half_used_subc:0]
+            half_used_subc = self.subcarriers // 2
+            first_half = np.r_[1:(half_used_subc + 1)]
+            second_half = np.r_[(-half_used_subc) - (self.subcarriers % 2):0]
 
-        return np.hstack([first_half, second_half])
+            return np.hstack([first_half, second_half])
+
+        return self.subcarriers
 
     def get_active_subcarriers_idxs(self):
         numbers = self._get_active_subcarriers_nums()
-        half_used = self.subcarriers // 2
+        if type(self.subcarriers) is np.ndarray:
+            return numbers
 
+        half_used = self.subcarriers // 2
         indexes_proper = np.hstack(
             [self.fft_size + numbers[half_used:], numbers[0:half_used]])
+
         return indexes_proper
 
     def get_subcarriers_idxs(self):
-        return np.fft.fftshift(np.arange(self.fft_size) - self.fft_size // 2)
+        idxs = np.fft.fftshift(np.arange(self.fft_size) - (self.fft_size // 2) - (self.fft_size % 2) + 1)[:-1]
+        idxs = np.insert(idxs, np.where(idxs == np.min(idxs))[0], min(idxs)-1)
+        return idxs
 
     def get_pilots_idxs(self):
-        pilots_idxs = self.subcarriers_idxs[::int(np.ceil(self.subcarriers / self.num_pilots))]
-        return pilots_idxs
+        if type(self.subcarriers) is int:
+            return self.subcarriers_idxs[::int(np.ceil(self.subcarriers / self.num_pilots))]
+        return self.subcarriers_idxs[::int(np.ceil(self.subcarriers.shape[-1] / self.num_pilots))]
 
     def check_perfect_square(self):
         return np.sqrt(np.power(2, self.bits_per_sym)).is_integer()

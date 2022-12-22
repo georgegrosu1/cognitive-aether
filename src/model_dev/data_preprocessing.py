@@ -71,7 +71,7 @@ class TimeSeriesFeeder(tf.keras.preprocessing.sequence.TimeseriesGenerator):
         assert (type(self.data_source) is pathlib.WindowsPath) | (type(self.data_source) is pathlib.Path) | \
                (type(self.data_source) is pd.DataFrame) | (type(self.data_source) is np.ndarray), \
             "Provide a dataframe or data path"
-        if type(self.data_source) is pd.DataFrame:
+        if (type(self.data_source) is pathlib.WindowsPath) | (type(self.data_source) is pathlib.Path):
             df = self.get_data_from_path()
         elif type(self.data_source) is np.ndarray:
             warnings.warn("Data source is ndarray. MAKE SURE YOUR ARRAYS MATCH THE ORDER OF THE FEATURES")
@@ -107,7 +107,7 @@ class TimeSeriesFeeder(tf.keras.preprocessing.sequence.TimeseriesGenerator):
 
     def get_data_from_path(self):
         if 'csv' in self.data_source.suffix:
-            return pd.read_csv(str(self.data_path))
+            return pd.read_csv(str(self.data_source))
         dfs = []
         all_csv_files = self.data_source.glob('*.csv')
         take_features = self.endogenous_features + self.exogenous_features
