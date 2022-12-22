@@ -120,17 +120,19 @@ def train_timeseries_energy_detector(model_base_cfgs, train_cfgs, model_name, mo
 
     window_dim = model_base_cfgs['model_cfg']['window_size']
 
-    train_feeder = TimeSeriesFeeder(data_path=training_path,
+    train_feeder = TimeSeriesFeeder(data_source=training_path,
                                     x_features=input_features,
                                     y_features=output_features,
-                                    window_dim=window_dim,
-                                    feed_batch=batch_size,
+                                    x_length=window_dim,
+                                    y_length=num_outputs,
+                                    batch_size=batch_size,
                                     shuffle=True)
-    eval_feeder = TimeSeriesFeeder(data_path=validation_path,
+    eval_feeder = TimeSeriesFeeder(data_source=validation_path,
                                    x_features=input_features,
                                    y_features=output_features,
-                                   window_dim=window_dim,
-                                   feed_batch=batch_size,
+                                   x_length=window_dim,
+                                   y_length=num_outputs,
+                                   batch_size=batch_size,
                                    shuffle=False)
 
     f1_score = F1Score(num_classes=2 ** num_outputs * (num_outputs == 1) + num_outputs * (num_outputs > 1),
@@ -152,6 +154,7 @@ def train_timeseries_energy_detector(model_base_cfgs, train_cfgs, model_name, mo
             model = build_seq_model(input_dim=num_inputs, output_dim=num_outputs,
                                     window_dim=window_dim, custom_metrics=m_metrics,
                                     learn_rate=lr_rate)
+    model.summary()
 
     tfboard = tf.keras.callbacks.TensorBoard(log_dir='logdir', histogram_freq=0, write_graph=True, write_images=True)
     checkpoint_filepath = get_saving_model_path(train_cfgs, model_name)
