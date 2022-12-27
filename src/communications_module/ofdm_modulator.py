@@ -15,7 +15,9 @@ class OFDMModulator:
         self.fft_size = fft_size
         if (type(subcarriers) is list) | (type(subcarriers) is np.ndarray):
             self.subcarriers = np.array(subcarriers)
-            assert fft_size >= self.subcarriers.shape[-1], 'FFT points must be greater than active sub-carriers'
+            assert fft_size >= self.subcarriers.shape[0], 'FFT points must be greater than active sub-carriers'
+            assert self.subcarriers.shape[0] == len(set(self.subcarriers)), \
+                'Subcarriers indexes array must not have duplicates'
         else:
             self.subcarriers = subcarriers
             assert fft_size >= self.subcarriers, 'FFT points must be greater than active sub-carriers'
