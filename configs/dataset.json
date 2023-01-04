@@ -1,23 +1,25 @@
 {
   "ofdm_modulator": {
-    "fft_size": 128,
-    "subcarriers": 96,
-    "num_pilots": 16,
+    "fft_size": 256,
+    "subcarriers": [[1,2,3,4,5,6,7,8,9,10],
+      [-99, -98, -97, -96, -95, -94, -93, -92, -91, -90, -89, -88, -87, -86, -85],
+    [41,42,43,44,45,56,57,58,59,80,81,82,83,84,85,86,87,88,89,90]],
+    "num_pilots": [2, 3, 4],
     "bits_per_sym": 6,
     "cp_ratio": 4,
-    "num_symbols": 4000,
+    "num_symbols": 10,
     "continuous_transmit": false,
     "continuous_silence": false
   },
   "rand_sampler": {
     "use": true,
-    "decimation": 128,
+    "decimation": 32,
     "sampling_type": "jrs_uniform"
   },
   "fading_channel": {
-    "type": "rayleigh",
-    "discrete_del": [5.2e-6, 6.8e-6, 7.9e-6, 8.8e-6, 9.9e-6, 13e-6],
-    "avg_path_gains": [-11, -12, -7, -8, -9, -10],
+    "type": "rician",
+    "discrete_del": [5.2e-6],
+    "avg_path_gains": [-7],
     "max_doppler_shift": 0.01,
     "k_factors": [1.5]
   },
@@ -31,7 +33,7 @@
   },
   "active_channels": {
     "awgn": true,
-    "fading": true
+    "fading": false
   },
   "superlet_scalogram": {
     "make": false,
@@ -46,5 +48,5 @@
     "c_1": 5,
     "adaptive": true
   },
-  "data_save_path": "/datasets/randomsampling/train"
+  "data_save_path": "/datasets/randomsampling/test"
 }
