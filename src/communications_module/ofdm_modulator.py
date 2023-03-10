@@ -48,7 +48,7 @@ class OFDMModulator:
         self.ofdm_sym_len = self.fft_size + self.cyclic_prefix
         self.pilot_default = 3 + 3j
         self.subcarriers_idxs = self.get_active_subcarriers_idxs()
-        self.pilots_idxs = self.get_pilots_idxs()
+        self.pilots_idxs = np.array([self.get_pilots_idxs()])
         if type(num_pilots) is list:
             self.data_carriers_idxs = []
             for user_carriers, user_pilots in zip(self.subcarriers_idxs, self.pilots_idxs):
@@ -95,10 +95,11 @@ class OFDMModulator:
 
     def get_pilots_idxs(self):
         if type(self.subcarriers) is int:
-            return np.array(self.subcarriers_idxs[::int(np.ceil(self.subcarriers / self.num_pilots))])
+            sorted_subcarriers = np.sort(self.subcarriers_idxs)
+            return np.array(sorted_subcarriers[::int(np.ceil(self.subcarriers / self.num_pilots)) + 1])
         pilot_idxs = []
         for user, user_pilots in zip(self.subcarriers_idxs, self.num_pilots):
-            pilot_idxs.append(user[::int(np.ceil(user.shape[0] / user_pilots))])
+            pilot_idxs.append(np.sort(user)[::int(np.ceil(user.shape[0] / user_pilots)) + 1])
 
         return np.array(pilot_idxs, dtype=object)
 
