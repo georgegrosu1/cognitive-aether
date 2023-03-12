@@ -19,9 +19,6 @@ class ChannelEq(OFDMBase):
         pilots_vals = nocp_dft_ofdm_sym[pilots_idxs_arr]
         h_est = pilots_vals / self.pilot_default
 
-        print(self.pilots_idxs)
-        print(self.subcarriers_idxs)
-
         h_est_abs = interp1d(pilots_idxs_arr, abs(h_est), kind='linear')(self.subcarriers_idxs)
         h_est_phase = interp1d(pilots_idxs_arr, np.angle(h_est), kind='linear')(self.subcarriers_idxs)
 
