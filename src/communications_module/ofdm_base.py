@@ -51,7 +51,7 @@ class OFDMBase:
         self.pilots_idxs = np.array([self.get_pilots_idxs()])
         if type(num_pilots) is list:
             self.data_carriers_idxs = []
-            for user_carriers, user_pilots in zip(self.subcarriers_idxs, self.pilots_idxs):
+            for user_carriers, user_pilots in zip(self.subcarriers_idxs, self.pilots_idxs.squeeze()):
                 self.data_carriers_idxs.append(user_carriers[~np.in1d(user_carriers, user_pilots)])
             self.data_carriers_idxs = np.array(self.data_carriers_idxs, dtype=object)
         else:
@@ -75,6 +75,9 @@ class OFDMBase:
 
             return np.hstack([first_half, second_half])
 
+        assert (max(max(arr) for arr in self.subcarriers) <= self.fft_size//2) & \
+               (min(min(arr) for arr in self.subcarriers) >= -self.fft_size//2), \
+            "Provide a numpy array of selection between [-NFFT/2, 0), (0, NFFT/2]"
         return self.subcarriers
 
     def get_active_subcarriers_idxs(self):

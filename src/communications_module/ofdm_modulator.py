@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from src.communications_module.ofdm_base import OFDMBase
 
 
@@ -27,8 +28,8 @@ class OFDMModulator(OFDMBase):
         if ofdm_sym_freq_domain is None:
             ofdm_sym_freq_domain = np.zeros(self.fft_size, dtype=complex)  # the overall K subcarriers
         if not bool(ioja):
-            ofdm_sym_freq_domain[user_pilots_carriers] = self.pilot_default  # allocate the pilot subcarriers
-            ofdm_sym_freq_domain[user_data_carriers] = qam_payload  # allocate the data subcarriers
+            ofdm_sym_freq_domain[user_pilots_carriers.astype(int)] = self.pilot_default  # allocate the pilot subcarriers
+            ofdm_sym_freq_domain[user_data_carriers.astype(int)] = qam_payload  # allocate the data subcarriers
         return ofdm_sym_freq_domain
 
     @staticmethod
@@ -57,7 +58,7 @@ class OFDMModulator(OFDMBase):
         ofdm_tx_signal = np.array([])
         for _ in range(ofdm_symbols):
             ofdm_sym_freq_domain = np.zeros(self.fft_size, dtype=complex)
-            for user_data_carriers, user_pilots in zip(self.data_carriers_idxs, self.pilots_idxs):
+            for user_data_carriers, user_pilots in zip(self.data_carriers_idxs, self.pilots_idxs.squeeze()):
                 ofdm_sym_freq_domain = self.generate_ofdm_symbol(user_data_carriers, user_pilots,
                                                                  ofdm_sym_freq_domain, continuous_transmission)
             ofdm_ift_time_domain = self.ofdm_idft(ofdm_sym_freq_domain)
