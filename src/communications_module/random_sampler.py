@@ -1,9 +1,11 @@
 import numpy as np
 from scipy.stats import truncnorm
+from scipy.signal import resample_poly
 
 
 class RandomSampling:
     def __init__(self,
+                 keep_rate: float,
                  decimation: int,
                  sampling_type: str):
 
@@ -11,6 +13,9 @@ class RandomSampling:
                 (sampling_type == 'ars_normal') | (sampling_type == 'ars_uniform')), \
             f'{sampling_type.upper()} not supported'
 
+        assert(0 < keep_rate <= 1), "Keep rate must be of (0, 1]"
+
+        self.keep_rate = keep_rate
         self.decimation = decimation
         self.sampling_type = sampling_type
 
@@ -50,8 +55,13 @@ class RandomSampling:
                 sampling_idxs = sampling_idxs.round()
                 return sampling_idxs.astype(int)
 
-    def get_sampling_idxs(self, signal_length: int):
+    def get_nonuniform_signal(self, signal: np.ndarray):
+        req_len = int(signal.shape[0] * self.keep_rate) * self.decimation
+        lcm = np.lcm(req_len, signal.shape[0])
+        resamp_signal = resample_poly(signal,
+                                      lcm//signal.shape[0],
+                                      lcm//req_len)
         if 'jrs' in self.sampling_type:
-            return self.jrs_random_sampling(signal_length)
+            return resamp_signal[self.jrs_random_sampling(resamp_signal.shape[0])]
         else:
-            return self.ars_random_sampling(signal_length)
+            return resamp_signal[self.ars_random_sampling(resamp_signal.shape[0])]
