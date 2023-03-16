@@ -35,25 +35,27 @@ class RandomSampling:
 
     def ars_random_sampling(self, signal_length, sampling_idxs: np.ndarray = np.array([0])):
         if 'normal' in self.sampling_type:
-            if sampling_idxs[-1] + self.decimation < signal_length:
-                next_idx = truncnorm(a=-self.decimation,
-                                     b=(self.decimation-1),
-                                     loc=(sampling_idxs[-1]+self.decimation)).rvs(size=(1,))
-                sampling_idxs = np.concatenate([sampling_idxs, next_idx])
-                return self.ars_random_sampling(signal_length, sampling_idxs)
-            else:
+            next_idx = truncnorm(a=-self.decimation,
+                                 b=(self.decimation-1),
+                                 loc=(sampling_idxs[-1]+self.decimation)).rvs(size=(1,))
+
+            if next_idx[0] > signal_length - 1:
                 sampling_idxs = sampling_idxs.round()
                 return sampling_idxs.astype(int)
+
+            sampling_idxs = np.concatenate([sampling_idxs, next_idx])
+            return self.ars_random_sampling(signal_length, sampling_idxs)
         else:
-            if sampling_idxs[-1] + (2*self.decimation-1) < signal_length:
-                next_idx = np.random.uniform(low=sampling_idxs[-1]+1,
-                                             high=(sampling_idxs[-1]+2*self.decimation)-1,
-                                             size=(1,))
-                sampling_idxs = np.concatenate([sampling_idxs, next_idx])
-                return self.ars_random_sampling(signal_length, sampling_idxs)
-            else:
+            next_idx = np.random.uniform(low=sampling_idxs[-1]+1,
+                                         high=(sampling_idxs[-1]+2*self.decimation)-1,
+                                         size=(1,))
+
+            if next_idx[0] > signal_length - 1:
                 sampling_idxs = sampling_idxs.round()
                 return sampling_idxs.astype(int)
+
+            sampling_idxs = np.concatenate([sampling_idxs, next_idx])
+            return self.ars_random_sampling(signal_length, sampling_idxs)
 
     def get_nonuniform_signal(self, signal: np.ndarray):
         req_len = int(signal.shape[0] * self.keep_rate) * self.decimation
@@ -62,6 +64,7 @@ class RandomSampling:
                                       lcm//signal.shape[0],
                                       lcm//req_len)
         if 'jrs' in self.sampling_type:
-            return resamp_signal[self.jrs_random_sampling(resamp_signal.shape[0])]
+            rand_indexes = self.jrs_random_sampling(resamp_signal.shape[0])
         else:
-            return resamp_signal[self.ars_random_sampling(resamp_signal.shape[0])]
+            rand_indexes = self.ars_random_sampling(resamp_signal.shape[0])
+        return resamp_signal[rand_indexes]
