@@ -45,9 +45,9 @@ class RandomSampling:
                 sampling_idxs = sampling_idxs.round()
                 return sampling_idxs.astype(int)
         else:
-            if sampling_idxs[-1] + self.decimation < signal_length:
-                next_idx = np.random.uniform(low=sampling_idxs[-1],
-                                             high=(sampling_idxs[-1]+2*self.decimation-1),
+            if sampling_idxs[-1] + (2*self.decimation-1) < signal_length:
+                next_idx = np.random.uniform(low=sampling_idxs[-1]+1,
+                                             high=(sampling_idxs[-1]+2*self.decimation)-1,
                                              size=(1,))
                 sampling_idxs = np.concatenate([sampling_idxs, next_idx])
                 return self.ars_random_sampling(signal_length, sampling_idxs)
